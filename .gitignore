@@ -1,0 +1,27 @@
+# Research files and generated indexes stay local.
+.local/
+config.local.json
+*.sqlite
+*.sqlite3
+*.db
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+
+# Private research and credentials; synthetic examples live in examples/demo/.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+private/
+source-documents/
+exports/
+*.log
+.coverage
+htmlcov/

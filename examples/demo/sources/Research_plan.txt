@@ -1,0 +1,13 @@
+FICTIONAL DEMONSTRATION. This file is invented and is not scientific evidence.
+
+Proposed study
+We will test whether two lighting schedules change the growth of an invented
+laboratory plant. Independently assigned growth trays would be the experimental
+units; repeated photographs of the same tray would not be independent replicates.
+We propose to compare a prespecified growth measurement between schedules.
+
+Unresolved inputs
+The number of independent trays, achievable precision, equipment access and
+choice of growth measurement have not been established. No experiment has been
+performed and no result or preliminary data are available. A null estimate with
+wide uncertainty would not establish that the schedules are equivalent.

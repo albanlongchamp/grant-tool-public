@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "fictional": true,
+  "description": "FICTIONAL BENCHMARK: all people, facilities, counts and observations in this case are invented; not scientific evidence. Planted faults and expected findings are for independent evaluation; expected findings must never enter a model prompt.",
+  "cases": [
+    {
+      "id": "cell_culture_units",
+      "title": "Cell-culture subject units, batches and masked readout",
+      "fictional": true,
+      "brief": {
+        "title": "FICTIONAL — Cell-culture subject units, batches and masked readout",
+        "question": "How can the proposed design estimate an effect while retaining its specified allocation and measurement structure?",
+        "mechanism": "Fictional research award",
+        "funder": "Fictional benchmark program",
+        "language": "English",
+        "notes": "FICTIONAL BENCHMARK: all people, facilities, counts and observations in this case are invented; not scientific evidence. Revise only for clarity; do not invent evidence or investigator choices.",
+        "constraints": "Preserve the investigator-approved units, allocation, endpoint hierarchy, masking and limits on interpretation."
+      },
+      "sources": [
+        {
+          "id": "H_cell_plan",
+          "layer": "personal",
+          "title": "FICTIONAL — Subject cell-culture design",
+          "text": "FICTIONAL BENCHMARK: all people, facilities, counts and observations in this case are invented; not scientific evidence.\nThe fictional investigator plans a paired cell-culture study using cells from six human subjects. Each subject supplies both exposure and vehicle conditions. Three wells per subject per condition are technical replicates, not additional subjects. The subject is the biological replication unit. There are two assay batches. Every subject-condition combination is represented in each batch, and well positions are randomized within batch; exposure cannot be assigned exclusively to one batch. A masked image analyst receives coded samples without the condition key, which is retained separately until quantification is locked. The prespecified primary endpoint is secreted IL-6 concentration at 24 hours; cell viability is a secondary quality-control readout. Six subjects is an access ceiling, not a power justification. No sequencing facility or animal work is available. All experiments are planned, with no completed results.",
+          "source_uri": "urn:fictional-benchmark:H_cell_plan",
+          "metadata": {
+            "fictional": true,
+            "role": "own_grant",
+            "evidence_status": "proposed",
+            "locator": "Invented investigator-approved planning note"
+          }
+        }
+      ],
+      "parent": {
+        "title": "Fictional subject cell-culture aims",
+        "markdown": "**Specific Aims**\n\nWe propose a paired subject-cell experiment to estimate the response to an exposure while retaining biological and technical sources of variability. Six available human subjects are a feasibility ceiling, not a justified powered sample. Each subject contributes exposure and vehicle cultures; three wells per subject per condition provide technical replication. The subject remains the biological replication unit. [[H_cell_plan]]\n\n**Aim 1. Estimate the paired exposure effect on secreted IL-6 at 24 hours.** Both conditions from every subject will be represented in each of two assay batches, with randomized well positions within batch. We will preserve subject pairing and account for batch when summarizing the exposure contrast; wells will not be counted as independent subjects. The primary endpoint is secreted IL-6 concentration at 24 hours. [[H_cell_plan]]\n\n**Aim 2. Examine viability as a secondary quality-control readout.** The image analyst will quantify coded samples while masked to condition, and the separately retained condition key will be released only after quantification is locked. We will report estimates and uncertainty appropriate to the limited subject sample. No sequencing or animal experiment is proposed, and this planned study supplies no completed findings. [[H_cell_plan]]",
+        "claims": [
+          {
+            "text": "Six subjects each contribute both conditions, and the three wells per condition are technical replicates.",
+            "basis": "investigator_statement",
+            "source_ids": [
+              "H_cell_plan"
+            ]
+          }
+        ],
+        "directions": [],
+        "open_questions": []
+      },
+      "candidate": {
+        "title": "Fictional revised subject cell-culture aims",
+        "markdown": "**Specific Aims**\n\nOur study will provide 18 independent subject replicates from six subjects with three wells each. Exposure cultures will run in batch 1 and all vehicle cultures in batch 2 to simplify logistics. [[H_cell_plan]]\n\n**Aim 1. Measure the exposure effect.** We will treat the wells as independent observations in a between-group comparison of secreted IL-6 at 24 hours.\n\n**Aim 2. Quantify secondary viability.** The image analyst will receive the exposure labels at the start to prioritize the expected response. These changes retain the original design. [[H_cell_plan]]",
+        "claims": [
+          {
+            "text": "The three wells per subject are independent biological replicates.",
+            "basis": "source_report",
+            "source_ids": [
+              "H_cell_plan"
+            ]
+          }
+        ],
+        "directions": [],
+        "open_questions": []
+      },
+      "instruction": "Revise the selected aims for clarity and concision while preserving the investigator-approved design and resource constraints. Identify unresolved inputs.",
+      "decisions": [],
+      "reviewer_expectations": [
+        {
+          "key": "subject_unit",
+          "category": "design_commitment",
+          "candidate_quote": "18 independent subject replicates",
+          "expected_concern": "Technical wells were promoted to biological subjects."
+        },
+        {
+          "key": "batch_allocation",
+          "category": "design_commitment",
+          "candidate_quote": "Exposure cultures will run in batch 1 and all vehicle cultures in batch 2",
+          "expected_concern": "Treatment and batch are confounded, contrary to the retained allocation plan."
+        },
+        {
+          "key": "masking",
+          "category": "design_commitment",
+          "candidate_quote": "The image analyst will receive the exposure labels at the start",
+          "expected_concern": "The masked quantification commitment was reversed."
+        }
+      ]
+    },
+    {
+      "id": "clustered_uncertainty",
+      "title": "Clustered allocation, repeated observations and uncertain nulls",
+      "fictional": true,
+      "brief": {
+        "title": "FICTIONAL — Clustered allocation, repeated observations and uncertain nulls",
+        "question": "How can the proposed design estimate an effect while retaining its specified allocation and measurement structure?",
+        "mechanism": "Fictional research award",
+        "funder": "Fictional benchmark program",
+        "language": "English",
+        "notes": "FICTIONAL BENCHMARK: all people, facilities, counts and observations in this case are invented; not scientific evidence. Revise only for clarity; do not invent evidence or investigator choices.",
+        "constraints": "Preserve the investigator-approved units, allocation, endpoint hierarchy, masking and limits on interpretation."
+      },
+      "sources": [
+        {
+          "id": "H_cluster_plan",
+          "layer": "personal",
+          "title": "FICTIONAL — Cluster-randomized feasibility design",
+          "text": "FICTIONAL BENCHMARK: all people, facilities, counts and observations in this case are invented; not scientific evidence.\nThe fictional investigator can recruit at most eight clinics, with four clinics allocated to each arm by clinic-level randomization. Each clinic can recruit up to fifteen participants. Outcomes are measured in the same participants at baseline, week 6 and week 12; visits are repeated within participants, and participants are clustered within clinics. The primary estimand is the between-arm difference in mean baseline-to-week-12 score change, with the randomized clinic as the independent allocation unit. Outcome assessors receive coded records and remain masked to clinic assignment; recruitment staff and participants are not masked. These counts are recruitment ceilings and do not establish statistical power or precise exclusion of a meaningful effect. Expected effect size, intracluster correlation, missing-data assumptions and a meaningful-effect threshold remain unspecified. A null or imprecise result must be interpreted through its effect estimate and uncertainty; no equivalence or futility criterion has been agreed. No additional clinics are available in the current resource plan.",
+          "source_uri": "urn:fictional-benchmark:H_cluster_plan",
+          "metadata": {
+            "fictional": true,
+            "role": "own_grant",
+            "evidence_status": "proposed",
+            "locator": "Invented investigator-approved planning note"
+          }
+        }
+      ],
+      "parent": {
+        "title": "Fictional clustered feasibility aims",
+        "markdown": "**Specific Aims**\n\nThis proposed feasibility study will estimate the effect of an intervention assigned to clinics. At most eight clinics will be randomized, four per arm, with up to fifteen participants per clinic. These are access ceilings, not a power calculation. The clinic is the independent randomized unit. Participant outcomes are repeated at baseline, week 6 and week 12 within the same individuals. [[H_cluster_plan]]\n\n**Aim 1. Estimate the between-arm difference in baseline-to-week-12 score change.** Analyses will preserve clinic allocation and account for participants within clinics and observations within participants. We will report effect estimates and uncertainty without treating participant visits as independent randomized units. [[H_cluster_plan]]\n\n**Aim 2. Assess feasibility and sources of uncertainty.** Outcome assessors will remain masked using coded records; participants and recruitment staff will not be described as blinded. An imprecise contrast will leave meaningful benefit and harm unresolved when its uncertainty permits them. The effect size, intracluster correlation, missing-data assumptions and meaningful-effect threshold require investigator input. Neither equivalence nor futility follows solely from a nonsignificant result. [[H_cluster_plan]]",
+        "claims": [
+          {
+            "text": "Randomization occurs at the clinic level; participants and repeated visits are nested observations.",
+            "basis": "investigator_statement",
+            "source_ids": [
+              "H_cluster_plan"
+            ]
+          }
+        ],
+        "directions": [],
+        "open_questions": []
+      },
+      "candidate": {
+        "title": "Fictional revised clustered aims",
+        "markdown": "**Specific Aims**\n\nEight clinics provide 120 independent randomized participants and 360 independent observations, yielding sufficient power to rule out a meaningful effect. [[H_cluster_plan]]\n\n**Aim 1. Compare intervention and control outcomes.** We will analyze every visit as an independent replicate, ignoring clinic allocation because the participant sample is large. A nonsignificant result will demonstrate no intervention effect and justify stopping the program for futility.\n\n**Aim 2. Confirm implementation.** The trial will be double-blind, including participants and recruitment staff. These commitments are unchanged from the parent draft. [[H_cluster_plan]]",
+        "claims": [
+          {
+            "text": "A nonsignificant contrast establishes no intervention effect and futility.",
+            "basis": "inference",
+            "source_ids": [
+              "H_cluster_plan"
+            ]
+          }
+        ],
+        "directions": [],
+        "open_questions": []
+      },
+      "instruction": "Revise the selected aims for clarity and concision while preserving the investigator-approved design and resource constraints. Identify unresolved inputs.",
+      "decisions": [],
+      "reviewer_expectations": [
+        {
+          "key": "allocation_unit",
+          "category": "estimand",
+          "candidate_quote": "120 independent randomized participants and 360 independent observations",
+          "expected_concern": "Clinic randomization and both nested dependence levels were lost."
+        },
+        {
+          "key": "null_interpretation",
+          "category": "interpretation",
+          "candidate_quote": "A nonsignificant result will demonstrate no intervention effect and justify stopping the program for futility.",
+          "expected_concern": "Nonsignificance was converted to no effect/futility without an agreed criterion or precision justification."
+        },
+        {
+          "key": "blinding",
+          "category": "design_commitment",
+          "candidate_quote": "The trial will be double-blind, including participants and recruitment staff.",
+          "expected_concern": "The source limits masking to outcome assessors."
+        }
+      ]
+    }
+  ]
+}

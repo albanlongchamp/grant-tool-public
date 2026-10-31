@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "name": "fictional-demo",
+      "path": "sources",
+      "default_role": "own_grant"
+    }
+  ],
+  "data_dir": "../../.local/demo",
+  "workers": 1,
+  "refresh": {"enabled": false}
+}

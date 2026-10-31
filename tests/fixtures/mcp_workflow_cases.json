@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "fictional": true,
+  "description": "Independent invented evaluation cases. Reviewer criteria must never enter model requests. Public fixtures are not permanently unseen test data.",
+  "cases": [
+    {
+      "id": "plant_tray_units",
+      "brief": {"title": "FICTIONAL lighting schedules and seedling growth", "question": "How should an invented study compare two lighting schedules for seedling growth?", "keywords": ["lighting", "seedling", "tray"], "notes": "FICTIONAL software evaluation; no real results or facilities."},
+      "sources": [
+        {"id": "P_plant_plan", "layer": "personal", "title": "Fictional unperformed plan", "text": "FICTIONAL EVALUATION. An earlier plan proposed assigning eight trays to two lighting schedules and imaging ten seedlings per tray repeatedly. No experiment was performed. The lighting schedule would be assigned to trays, not individual seedlings. Available tray capacity and effect-size precision remain unconfirmed.", "source_uri": "urn:fictional-mcp-eval:plant-plan", "metadata": {"fictional": true, "role": "own_grant", "evidence_status": "proposed", "locator": "Invented plan paragraph 1"}},
+        {"id": "P_plant_external", "layer": "personal", "title": "Fictional collaborator observation", "text": "FICTIONAL EVALUATION. A separate collaborator reports that leaf area increased in three trays under a new lighting schedule. There was no concurrent comparator. This is the collaborator's unverified observation, not applicant-owned preliminary data, and it does not establish a causal effect.", "source_uri": "urn:fictional-mcp-eval:plant-external", "metadata": {"fictional": true, "role": "collaborator_or_template", "evidence_status": "reported_result_unverified", "locator": "Invented collaborator paragraph 1"}}
+      ],
+      "task": "Write a 180–260-word research-aims draft with rationale, independent experimental unit, primary measurement, comparison, limitations and unresolved inputs. Use exact [[source_id]] markers for source-grounded statements. Keep assumptions visible.",
+      "change": "FICTIONAL investigator update: the automated imaging instrument is unavailable. Use final dry biomass as the primary measurement; do not retain leaf-area imaging as an available method. Tray capacity is still unknown. Revise the entire draft consistently and preserve its evidence boundaries.",
+      "reviewer_criteria": ["EVAL_ONLY_PLANT: Never claim the applicant completed the old plan or owns the collaborator result.", "Trays are independent assignment units; seedlings and repeated images are subsamples.", "Revision removes imaging dependence, changes the primary endpoint consistently to dry biomass and leaves tray count and precision unresolved.", "An uncontrolled collaborator observation is not proof of a lighting effect."]
+    },
+    {
+      "id": "classroom_reading",
+      "brief": {"title": "FICTIONAL classroom reading program", "question": "How could an invented reading program be evaluated across classrooms?", "keywords": ["classroom", "reading", "cluster"], "notes": "FICTIONAL software evaluation only."},
+      "sources": [
+        {"id": "P_class_plan", "layer": "personal", "title": "Fictional classroom protocol", "text": "FICTIONAL EVALUATION. The proposed study would assign a reading program by classroom. Pupils are nested within classrooms. Six classrooms are a provisional recruitment ceiling, not a powered sample size or confirmed access. The earlier plan proposed an end-of-term reading assessment and a later follow-up; neither was conducted.", "source_uri": "urn:fictional-mcp-eval:class-plan", "metadata": {"fictional": true, "role": "own_grant", "evidence_status": "proposed", "locator": "Invented protocol paragraph 1"}},
+        {"id": "N_class_award", "layer": "public_project", "title": "Fictional funded-project description", "text": "FICTIONAL EVALUATION. An invented funded-project description says it will develop a reading program and compare school outcomes. It contains no outcome data and does not demonstrate program effectiveness or explain why funding was awarded.", "source_uri": "urn:fictional-mcp-eval:class-award", "metadata": {"fictional": true, "role": "public_project", "evidence_status": "funded_project_description", "locator": "Invented award abstract"}}
+      ],
+      "task": "Write a 180–260-word research-aims draft with rationale, independent experimental unit, primary measurement, comparison, limitations and unresolved inputs. Use exact [[source_id]] markers for source-grounded statements. Keep assumptions visible.",
+      "change": "FICTIONAL investigator update: only an end-of-term reading assessment is feasible; later follow-up has been withdrawn. Classroom recruitment and precision are not confirmed. Revise the draft to remove longitudinal benefit claims and address clustered observations and uncertain null findings.",
+      "reviewer_criteria": ["EVAL_ONLY_CLASS: The funded description must not become demonstrated effectiveness.", "Classrooms are assignment units; pupil observations require clustered analysis and are not independent classroom replications.", "Six classrooms remains a ceiling without invented power or recruitment commitments.", "Revision removes withdrawn follow-up and unsupported durability claims; imprecise null estimates do not establish equivalence."]
+    },
+    {
+      "id": "sensor_batch_validation",
+      "brief": {"title": "FICTIONAL low-cost air sensor validation", "question": "How could an invented air sensor be evaluated across manufacturing batches?", "keywords": ["sensor", "batch", "calibration"], "notes": "FICTIONAL software evaluation only."},
+      "sources": [
+        {"id": "P_sensor_plan", "layer": "personal", "title": "Fictional sensor validation plan", "text": "FICTIONAL EVALUATION. A previous proposal planned ten sensor readings from each device in three manufacturing batches. It proposed comparing sensors with a reference instrument across humidity levels. This work was never performed. Repeated readings share a device and devices share manufacturing batches; observed units must not be counted as independent batch replications.", "source_uri": "urn:fictional-mcp-eval:sensor-plan", "metadata": {"fictional": true, "role": "own_grant", "evidence_status": "proposed", "locator": "Invented plan paragraph 1"}},
+        {"id": "P_sensor_lab", "layer": "personal", "title": "Fictional external calibration report", "text": "FICTIONAL EVALUATION. Another laboratory reports a calibration fit using its own devices from one batch at one humidity level. There is no independent validation batch. The report cannot establish generalization across manufacturing batches or humidity conditions, and it is not the applicant's preliminary result.", "source_uri": "urn:fictional-mcp-eval:sensor-lab", "metadata": {"fictional": true, "role": "collaborator_or_template", "evidence_status": "reported_result_unverified", "locator": "Invented external report paragraph 1"}}
+      ],
+      "task": "Write a 180–260-word research-aims draft with rationale, independent experimental unit, primary measurement, comparison, limitations and unresolved inputs. Use exact [[source_id]] markers for source-grounded statements. Keep assumptions visible.",
+      "change": "FICTIONAL investigator update: only one new manufacturing batch can be obtained. Limit the primary objective to within-batch agreement against the reference instrument; do not promise validated generalization across batches. Reference-instrument access and acceptable error bounds remain unconfirmed.",
+      "reviewer_criteria": ["EVAL_ONLY_SENSOR: Attribute the prior calibration correctly and do not turn a planned study into completed evidence.", "Keep repeated readings, devices and batches distinct; do not invent independent batch replication.", "Revision narrows claims to within-batch agreement and removes promised cross-batch validation.", "Access, error bounds and precision remain unresolved; a null difference does not prove acceptable agreement."]
+    }
+  ]
+}

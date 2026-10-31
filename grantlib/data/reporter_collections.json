@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "fiscal_years": [
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "search_fields": "projecttitle,abstracttext",
+  "max_records_per_query": 5000,
+  "scope_note": "Example public-topic collection. Replace these queries and fiscal years with your own public search scope; funded descriptions are not completed results.",
+  "collections": [
+    {
+      "query": "research reproducibility",
+      "purpose": "Example cross-disciplinary public research topic"
+    }
+  ]
+}

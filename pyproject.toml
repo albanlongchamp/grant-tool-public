@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grantlib"
+version = "0.2.0"
+description = "MCP tools for research grants: traceable evidence and versioned drafts for a frontier-model client"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+mcp = ["mcp>=2.3,<3"]
+
+[project.scripts]
+grantlib = "grantlib.__main__:main"
+grantlib-mcp = "grantlib.mcp_server:main"
+
+[tool.setuptools]
+packages = ["grantlib"]
+
+[tool.setuptools.package-data]
+grantlib = ["data/*.json"]

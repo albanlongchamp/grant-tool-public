@@ -1,0 +1,1044 @@
+{
+  "schema_version": 1,
+  "description": "Curated public government guidance, kept separate from private scientific source passages. Tips are bounded paraphrases. Requirements apply only within the stated scope; confirm the active funding opportunity, its related notices, and the instructions effective for the submission date.",
+  "checked_on": "2026-10-30",
+  "sources": [
+    {
+      "id": "nih-general-writing",
+      "title": "General Grant Writing Tips",
+      "agency": "NIH",
+      "source_url": "https://grants.nih.gov/grants-process/write-application/general-grant-writing-tips",
+      "checked_on": "2026-10-30",
+      "content_type": "advice",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "writing",
+        "specific aims",
+        "scope",
+        "clarity",
+        "reviewers",
+        "editing",
+        "budget"
+      ],
+      "tips": [
+        "Draft the aims early and get feedback before expanding the application.",
+        "Match the proposed work to the available time, budget, and team's expertise.",
+        "Use the application instructions to structure the outline so reviewers can find the information they need.",
+        "Give each paragraph a clear main point, explain unfamiliar terms, and use consistent terminology.",
+        "Ask both specialist and less-specialized readers to assess the draft against the opportunity's review criteria."
+      ],
+      "caveats": [
+        "NIH presents these writing tips as suggestions; they do not replace mandatory application instructions.",
+        "Formatting, attachment rules, and page limits must be checked separately for the chosen opportunity."
+      ]
+    },
+    {
+      "id": "nih-application-sections",
+      "title": "Advice on Application Sections",
+      "agency": "NIH",
+      "source_url": "https://www.grants.nih.gov/grants-process/write-application/advice-on-application-sections",
+      "checked_on": "2026-10-30",
+      "content_type": "advice",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "specific aims",
+        "hypothesis",
+        "research strategy",
+        "significance",
+        "innovation",
+        "approach",
+        "preliminary studies"
+      ],
+      "tips": [
+        "Frame aims around scientific goals and expected contributions, rather than a list of experiments.",
+        "When feasible, design aims so that a null result still informs the field and leaves a productive path forward.",
+        "Use clear subheadings to distinguish rationale, proposed methods, and preliminary studies within the required structure.",
+        "Keep experimental plans, budget needs, and bibliography entries aligned as the draft changes."
+      ],
+      "caveats": [
+        "Required attachments differ by program; some training applications use a program plan instead of a research strategy.",
+        "The page's typical R01 aim count is an example, not a rule for K23 or every research application. Check the current NOFO and application guide."
+      ]
+    },
+    {
+      "id": "nih-k23-overview",
+      "title": "Mentored Patient-Oriented Research Career Development Award (K23)",
+      "agency": "NIH",
+      "source_url": "https://grants.nih.gov/funding/activity-codes/K23",
+      "checked_on": "2026-10-30",
+      "content_type": "framework",
+      "applies_to": [
+        "K23"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "K23",
+        "patient oriented research",
+        "career development",
+        "mentoring",
+        "eligibility",
+        "NOFO"
+      ],
+      "tips": [
+        "Explain how supervised research and development will support a clinically trained investigator's commitment to patient-oriented research.",
+        "Check which NIH organizations participate in the selected opportunity and whether the project fits a participating organization's mission.",
+        "Use the career-development instructions together with the specific opportunity and its related notices."
+      ],
+      "caveats": [
+        "This activity-code overview does not establish eligibility or fit for an individual application; the selected NOFO supplies the operative details.",
+        "Do not infer clinical-trial eligibility, effort requirements, due dates, or permitted budgets from another K23 application."
+      ]
+    },
+    {
+      "id": "nih-career-review-scope",
+      "title": "Individual Career Development",
+      "agency": "NIH",
+      "source_url": "https://grants.nih.gov/funding/funding-categories/research-training-and-career-development/individual-career",
+      "checked_on": "2026-10-30",
+      "content_type": "framework",
+      "applies_to": [
+        "K_SERIES"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "K23",
+        "K08",
+        "career development",
+        "review criteria",
+        "mentored",
+        "protected time"
+      ],
+      "tips": [
+        "Start the review checklist from Section V of the selected career-development funding opportunity.",
+        "Explain why the proposed research and training experience serves the candidate's career-development goals.",
+        "Use the appropriate career-development parent announcement to locate the program's baseline review criteria when identifying an opportunity."
+      ],
+      "caveats": [
+        "This overview directs applicants to opportunity-specific criteria; it is not a universal K-award scoring rubric.",
+        "Mechanisms support different career stages and arrangements. Confirm the selected program rather than generalizing from all K awards."
+      ]
+    },
+    {
+      "id": "nih-career-application-instructions",
+      "title": "Career Development Instructions for NIH and Other PHS Agencies",
+      "agency": "NIH",
+      "source_url": "https://www.grants.nih.gov/grants/how-to-apply-application-guide/forms-i/career-forms-i.pdf",
+      "checked_on": "2026-10-30",
+      "source_version": "FORMS-I; release labeled December 2025",
+      "source_sections": [
+        "K.100",
+        "K.410 Candidate Information and Goals",
+        "K.410 Research Plan",
+        "K.410 Mentor Statements",
+        "K.410 Institutional Commitment"
+      ],
+      "content_type": "requirement",
+      "applies_to": [
+        "K_SERIES"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "K23",
+        "K08",
+        "candidate",
+        "career goals",
+        "training plan",
+        "mentor",
+        "independence",
+        "institutional commitment",
+        "NOFO precedence"
+      ],
+      "tips": [
+        "Use the candidate section to connect prior experience, future goals, and the specific skills to be developed during the award.",
+        "Explain how research and other developmental activities build the capacity needed for the proposed independent career.",
+        "For mentored awards, identify each mentor's contribution, supervision, research support, and plan for the candidate's transition toward independence.",
+        "Document institutional support and the practical arrangements that provide the effort and resources specified in the opportunity.",
+        "Make the research plan achievable and include likely problems and alternative approaches."
+      ],
+      "caveats": [
+        "K.100 states that NOFO instructions supersede the application guide. Check related notices and the forms version effective for the submission date.",
+        "These selected requirements are not an exhaustive checklist. Some attachments and details apply only to particular career mechanisms.",
+        "Subsequent policy notices can supersede the guide: NOT-OD-26-120 removed K-award DMS Plan requirements effective October 5, 2026. Recheck current notices before reusing an older attachment checklist."
+      ]
+    },
+    {
+      "id": "nih-simplified-research-review",
+      "title": "Applicant Guidance for Simplifying the Review Framework for Most Research Project Grants",
+      "agency": "NIH",
+      "source_url": "https://www.grants.nih.gov/policy-and-compliance/policy-topics/peer-review/simplifying-review/applicant-guidance",
+      "checked_on": "2026-10-30",
+      "content_type": "framework",
+      "effective_from": "2025-01-25",
+      "applies_to": [
+        "R01",
+        "R03",
+        "R15",
+        "R16",
+        "R21",
+        "R33",
+        "R34",
+        "R36",
+        "R61",
+        "RC1",
+        "RC2",
+        "RC4",
+        "RF1",
+        "RL1",
+        "RL2",
+        "U01",
+        "U34",
+        "U3R",
+        "UA5",
+        "UC1",
+        "UC2",
+        "UC4",
+        "UF1",
+        "UG3",
+        "UH2",
+        "UH3",
+        "UH5",
+        "R21/R33",
+        "UH2/UH3",
+        "UG3/UH3",
+        "R61/R33"
+      ],
+      "not_applicable_to": [
+        "K_SERIES",
+        "F31",
+        "F32",
+        "R41",
+        "R42",
+        "R43",
+        "R44"
+      ],
+      "tags": [
+        "R01",
+        "review criteria",
+        "simplified review",
+        "three factors",
+        "activity code",
+        "NOFO"
+      ],
+      "tips": [
+        "Check the activity code and due date before using the simplified research-project review framework.",
+        "For covered applications, examine the selected opportunity's application instructions and its review criteria organized into three factors.",
+        "Use the opportunity and forms version valid for the actual due date when adapting an older application."
+      ],
+      "caveats": [
+        "The published applicability list covers selected research-project mechanisms, including R01, for due dates from January 25, 2025.",
+        "K23 and other K awards are not in that list. Do not replace K23-specific review criteria with this framework."
+      ]
+    },
+    {
+      "id": "nih-rigor-reproducibility",
+      "title": "Guidance: Rigor and Reproducibility in Grant Applications",
+      "agency": "NIH",
+      "source_url": "https://www.grants.nih.gov/policy-and-compliance/policy-topics/reproducibility/guidance",
+      "checked_on": "2026-10-30",
+      "content_type": "requirement",
+      "applies_to": [
+        "R01",
+        "R03",
+        "R15",
+        "R16",
+        "R21",
+        "R33",
+        "R34",
+        "R36",
+        "R61",
+        "RF1",
+        "U01",
+        "U34",
+        "UG3",
+        "UH2",
+        "UH3",
+        "K01",
+        "K08",
+        "K23",
+        "K25",
+        "K99"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "rigor",
+        "reproducibility",
+        "prior research",
+        "experimental design",
+        "biological variables",
+        "sex",
+        "authentication",
+        "methods"
+      ],
+      "tips": [
+        "Assess strengths and weaknesses in the prior evidence supporting the proposal, including unpublished work, and explain how weaknesses will be addressed.",
+        "Describe design, methods, analysis, and interpretation sufficiently to support robust and unbiased results.",
+        "Account for relevant biological variables; justify studies restricted to one sex when the NIH expectation applies.",
+        "Identify key biological or chemical resources and explain the relevant authentication approach."
+      ],
+      "caveats": [
+        "The listed activity codes are a selected retrieval scope for research and mentored career awards, not NIH's complete applicability list.",
+        "Consult the current application instructions and NOFO for the appropriate attachments and requirements for the actual study."
+      ]
+    },
+    {
+      "id": "nih-resubmission",
+      "title": "Resubmission Applications",
+      "agency": "NIH",
+      "source_url": "https://www.grants.nih.gov/grants-process/submit/submission-policies/resubmission-applications",
+      "checked_on": "2026-10-30",
+      "content_type": "requirement",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "resubmission",
+        "A1",
+        "introduction",
+        "reviewer feedback",
+        "summary statement",
+        "response",
+        "reference letters"
+      ],
+      "tips": [
+        "Confirm that the chosen opportunity permits resubmission and review the prior summary statement before preparing the response.",
+        "Use the introduction to summarize substantive changes and address the issues raised in review.",
+        "Do not mark revision differences inside application attachments; explain the changes in the introduction instead.",
+        "Career-development applicants should arrange the required reference-letter submissions again for a resubmission."
+      ],
+      "caveats": [
+        "These are resubmission instructions, not instructions to attach an introduction to a new application.",
+        "Check current timing, permitted application types, page limits, and any exceptions in the selected NOFO and related notices."
+      ]
+    },
+    {
+      "id": "nih-plain-language",
+      "title": "Communicating Research Intent and Value in NIH Applications",
+      "agency": "NIH",
+      "source_url": "https://grants.nih.gov/grants-process/write-application/general-grant-writing-tips/communicating-research-intent-and-value-in-nih-applications",
+      "checked_on": "2026-10-30",
+      "content_type": "advice",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "plain language",
+        "title",
+        "abstract",
+        "project narrative",
+        "public health relevance",
+        "impact",
+        "audience"
+      ],
+      "tips": [
+        "Make the title, abstract, and public-health narrative understandable to readers without specialist scientific training.",
+        "Explain the proposed work, the problem it addresses, and the potential public-health contribution in direct language.",
+        "Retain the technical detail needed for scientific assessment in the research plan and other appropriate sections."
+      ],
+      "caveats": [
+        "Plain-language editing should preserve the scientific meaning and uncertainty of the proposal.",
+        "The research strategy serves a scientifically literate audience; it need not use the same level of detail as the public narrative."
+      ]
+    },
+    {
+      "id": "nsf-proposal-preparation",
+      "title": "Preparing Your Proposal",
+      "agency": "NSF",
+      "source_url": "https://www.nsf.gov/funding/preparing-proposal",
+      "checked_on": "2026-10-30",
+      "content_type": "requirement",
+      "applies_to": [
+        "NSF_ALL"
+      ],
+      "not_applicable_to": [
+        "NIH_ALL"
+      ],
+      "tags": [
+        "NSF",
+        "proposal",
+        "PAPPG",
+        "solicitation",
+        "intellectual merit",
+        "broader impacts",
+        "budget",
+        "data management"
+      ],
+      "tips": [
+        "Use the applicable Proposal and Award Policies and Procedures Guide alongside the specific solicitation; solicitation instructions may modify the general rules.",
+        "For a standard research proposal, distinguish the overview, intellectual merit, and broader impacts in the project summary.",
+        "Explain the planned work, its rationale, the method, how success will be assessed, and the potential benefits.",
+        "Keep the budget justification, personnel information, available resources, and applicable mentoring and data-sharing plans consistent with the proposal."
+      ],
+      "caveats": [
+        "This is NSF guidance and should not be applied as NIH K23 requirements.",
+        "The overview is not exhaustive; check the guide and policy updates effective for the proposal date, plus solicitation-specific requirements."
+      ]
+    },
+    {
+      "id": "ninds-career-development-plan",
+      "title": "NINDS Suggestions for a Good Career Development Plan",
+      "agency": "NIH",
+      "source_url": "https://www.ninds.nih.gov/sites/default/files/documents/Suggestions%20for%20a%20good%20career%20development%20plan_508C.pdf",
+      "checked_on": "2026-10-30",
+      "content_type": "advice",
+      "applies_to": [
+        "K_SERIES"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "career development",
+        "training gaps",
+        "K23",
+        "K08",
+        "mentor meetings",
+        "statistics",
+        "experimental design",
+        "milestones",
+        "independence"
+      ],
+      "tips": [
+        "Start with career and research goals, identify existing skills and specific gaps, then justify each development activity as a way to close a gap.",
+        "Specify how individual and joint mentor meetings will work, and ensure mentor letters agree with that plan.",
+        "Demonstrate adequate preparation in experimental design and statistics or explain how the candidate will acquire it.",
+        "Avoid unnecessary coursework, poorly matched course levels, and development activities that consume so much time that they undermine the research.",
+        "Use successful applications as examples to analyze, while writing a plan tailored to the candidate's own background and trajectory."
+      ],
+      "caveats": [
+        "This NINDS advice is not a universal scoring rubric or a guarantee of funding.",
+        "The chosen institute and opportunity may have additional or different priorities and instructions."
+      ]
+    },
+    {
+      "id": "nia-career-application-examples",
+      "title": "NIA Award Sample Applications and Resubmissions",
+      "agency": "NIH",
+      "source_url": "https://www.nia.nih.gov/research/training/sample-applications",
+      "checked_on": "2026-10-30",
+      "content_type": "framework",
+      "applies_to": [
+        "K99/R00",
+        "F99/K00"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "NIA",
+        "sample applications",
+        "summary statements",
+        "resubmission",
+        "career development",
+        "K99/R00",
+        "F99/K00",
+        "examples"
+      ],
+      "tips": [
+        "Use the paired initial submissions, summary statements, and resubmissions to study how applicants revised their scientific and career-development arguments.",
+        "Compare the candidate's training needs and research trajectory with the examples before deciding what presentation choices are relevant.",
+        "Follow current application instructions and seek feedback on the candidate's own plan."
+      ],
+      "caveats": [
+        "These are historical examples from funded applicants, not templates or evidence that a particular style causes funding success.",
+        "The catalog describes educational-use conditions and attribution requirements. Review the conditions and each individual sample before copying or redistributing material.",
+        "The listing was verified through the official search-index excerpt and NIH's live sample catalog; individual applications were not analyzed here."
+      ]
+    },
+    {
+      "id": "nih-sample-applications-documents",
+      "title": "NIH Sample Applications and Documents",
+      "agency": "NIH",
+      "source_url": "https://grants.nih.gov/grants-process/write-application/samples-applications-and-documents",
+      "checked_on": "2026-10-30",
+      "content_type": "framework",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "sample applications",
+        "summary statements",
+        "NIAID",
+        "NIA",
+        "NCI",
+        "K awards",
+        "R01",
+        "examples",
+        "authentication",
+        "leadership plan",
+        "format pages"
+      ],
+      "tips": [
+        "Use the central catalog to find institute-provided funded applications, summary statements, sample plans, and attachment formats.",
+        "Study how an example communicates its rationale and methods, then adapt the presentation to the actual science and audience.",
+        "Check the sample's mechanism and submission-era forms before using it to structure a new application.",
+        "Use official format pages for current attachments instead of assuming that an older successful application's format remains valid."
+      ],
+      "caveats": [
+        "Examples are not available for every program and do not replace the current opportunity or application guide.",
+        "Follow each sample's attribution and reuse conditions; the catalog does not authorize unrestricted reuse of investigator text, figures, or data."
+      ]
+    },
+    {
+      "id": "nih-after-review-next-steps",
+      "title": "NIH After Review and Next Steps",
+      "agency": "NIH",
+      "source_url": "https://www.grants.nih.gov/grants-process/review/after-review",
+      "checked_on": "2026-10-30",
+      "content_type": "advice",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "summary statement",
+        "reviewer feedback",
+        "resubmission",
+        "program officer",
+        "fundability",
+        "next steps"
+      ],
+      "tips": [
+        "Read the complete summary statement and identify the scientific issues raised before planning revisions.",
+        "Discuss the critiques, possible funding prospects, and next steps with the assigned program official after the summary statement is available.",
+        "If funding is unlikely, consider either a substantive resubmission addressing the concerns or a new application with an appropriately revised direction."
+      ],
+      "caveats": [
+        "A favorable review is not an award. Funding decisions depend on the institute's process, priorities, and available funds.",
+        "Review and funding timelines may vary; use the application status and current NIH communications rather than treating typical intervals as guarantees."
+      ]
+    },
+    {
+      "id": "nigms-nih-staff-roles",
+      "title": "Talking to NIH Staff About Your Application and Grant",
+      "agency": "NIH",
+      "source_url": "https://www.nigms.nih.gov/grants/Pages/Talking-to-NIH-Staff-About-Your-Application-and-Grant",
+      "checked_on": "2026-10-30",
+      "content_type": "advice",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "program officer",
+        "scientific review officer",
+        "grants management",
+        "institute fit",
+        "scope",
+        "budget",
+        "summary statement",
+        "NIGMS"
+      ],
+      "tips": [
+        "Before submission, use a brief research description to discuss scientific fit, scope, and the appropriate program with a program officer.",
+        "Direct questions about review handling to the scientific review officer during review; discuss interpretation and funding prospects with the program officer after the summary statement is released.",
+        "Work with the institution's authorized representative on financial and administrative matters involving grants management."
+      ],
+      "caveats": [
+        "The article uses NIGMS examples; identify the staff assigned to the actual institute and application.",
+        "Program guidance does not guarantee review scores or funding and is distinct from an authorized award decision."
+      ]
+    },
+    {
+      "id": "nih-career-reference-letters",
+      "title": "NIH Reference Letters for Career and Fellowship Applications",
+      "agency": "NIH",
+      "source_url": "https://grants.nih.gov/grants-process/write-application/advice-on-application-sections/reference-letters",
+      "checked_on": "2026-10-30",
+      "content_type": "requirement",
+      "applies_to": [
+        "K_SERIES",
+        "F30",
+        "F31",
+        "F32",
+        "F33",
+        "F99/K00"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "reference letters",
+        "referees",
+        "mentor",
+        "letters of support",
+        "K23",
+        "resubmission",
+        "eRA Commons",
+        "deadline"
+      ],
+      "tips": [
+        "Confirm whether the funding opportunity requires reference letters and arrange the required number from appropriate referees.",
+        "Distinguish confidential reference letters from support letters and mentor statements; sponsors or co-sponsors do not count toward the required references.",
+        "Give referees the current instructions, Commons identity, and opportunity number so they can submit directly by the application deadline.",
+        "Monitor submission status in Commons and arrange new reference letters for a resubmission."
+      ],
+      "caveats": [
+        "Requirements depend on the opportunity. This retrieval scope does not mean every listed award always requires the same number or type of letters.",
+        "Applicants can monitor receipt but cannot read the confidential reference letters through Commons."
+      ]
+    },
+    {
+      "id": "csr-request-scientific-review-group",
+      "title": "CSR Request a Scientific Review Group",
+      "agency": "NIH",
+      "source_url": "https://public.csr.nih.gov/ForApplicants/SubmissionAndAssignment/RequestScientificReviewGroup",
+      "checked_on": "2026-10-30",
+      "content_type": "advice",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "study section",
+        "assignment request",
+        "review expertise",
+        "institute fit",
+        "conflict of interest",
+        "RePORTER",
+        "specific aims"
+      ],
+      "tips": [
+        "Use the optional Assignment Request Form to express institute or study-section preferences and describe the expertise needed for review.",
+        "Compare the proposal's aims and methods with current study-section descriptions and recent related RePORTER awards.",
+        "Request relevant expertise rather than naming preferred reviewers; separately explain any potential reviewer conflicts.",
+        "Confirm that the requested institute participates in the selected funding opportunity."
+      ],
+      "caveats": [
+        "Requests are considered but not guaranteed; some opportunities have a predetermined review location.",
+        "Study-section scopes and rosters change. Use the assignment form rather than a cover letter for assignment suggestions."
+      ]
+    },
+    {
+      "id": "nih-career-program-updates-2027",
+      "title": "Planned 2027 Updates to NIH Career Development Programs",
+      "agency": "NIH",
+      "source_url": "https://grants.nih.gov/grants/guide/notice-files/NOT-OD-26-098.html",
+      "checked_on": "2026-10-30",
+      "source_version": "NOT-OD-26-098, released August 12, 2026; related DMS notice issued October 5, 2026",
+      "effective_from": "2027-10-12",
+      "content_type": "framework",
+      "applies_to": [
+        "K_SERIES",
+        "KR1",
+        "KC1",
+        "KS1",
+        "KT1/R00"
+      ],
+      "not_applicable_to": [
+        "K00",
+        "K12",
+        "K43",
+        "K76"
+      ],
+      "tags": [
+        "future policy",
+        "K23",
+        "K08",
+        "KC1",
+        "career development",
+        "clinical trials",
+        "NOFO transition",
+        "2027"
+      ],
+      "tips": [
+        "For applications planned for due dates on or after October 12, 2027, check the announced consolidated career-award structure and its replacement funding opportunities.",
+        "The notice maps current K08 and K23 programs to the future KC1 category; review the final opportunity before adapting an existing K23 application.",
+        "Plan separately for the announced future restrictions on using K-award funds for clinical-trial conduct and the route to gaining trial experience through mentors."
+      ],
+      "caveats": [
+        "These program-consolidation and clinical-trial changes are prospective, not current K23 submission rules as of the check date. The notice says affected current-code opportunities will expire by July 13, 2027.",
+        "DMS changes have a different implementation timeline: NOT-OD-26-120 accelerated that component in October 2026. Do not infer one common effective date for every change."
+      ]
+    },
+    {
+      "id": "nih-human-subjects-decision",
+      "title": "Decision Tool: Am I Doing Human Subjects Research?",
+      "agency": "NIH",
+      "source_url": "https://grants.nih.gov/policy-and-compliance/policy-topics/human-subjects/hs-decision",
+      "checked_on": "2026-10-30",
+      "content_type": "framework",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "human subjects",
+        "biospecimens",
+        "ex vivo",
+        "identifiable data",
+        "secondary research",
+        "deceased individuals",
+        "IRB",
+        "exemption"
+      ],
+      "tips": [
+        "Use the decision tool to distinguish research involving interaction or intervention, secondary use of data or specimens, and research involving only deceased individuals.",
+        "Document whether specimens or private information are identifiable and whether they were collected specifically for the proposed study.",
+        "Resolve the human-subjects determination before choosing the corresponding application responses."
+      ],
+      "caveats": [
+        "NIH states that the tool must not be the sole basis for an exemption determination; obtain the appropriate institutional review.",
+        "An ex vivo or specimen-based study cannot be classified from its label alone. Specimen source, identifiability, and collection procedures matter."
+      ]
+    },
+    {
+      "id": "nih-clinical-trial-decision",
+      "title": "Decision Tool: Does Your Human Subjects Study Meet the NIH Definition of a Clinical Trial?",
+      "agency": "NIH",
+      "source_url": "https://www.grants.nih.gov/policy-and-compliance/policy-topics/clinical-trials/ct-decision",
+      "checked_on": "2026-10-30",
+      "content_type": "framework",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "clinical trial",
+        "study classification",
+        "intervention",
+        "ancillary study",
+        "biospecimens",
+        "BESH",
+        "NOFO"
+      ],
+      "tips": [
+        "Assess human participation, prospective intervention assignment, evaluation of the intervention's effect, and a health-related outcome for each proposed study.",
+        "For ancillary studies, assess the work in the ancillary study rather than importing the parent trial's classification.",
+        "Secondary research limited to existing specimens or health information is distinguished from a clinical trial."
+      ],
+      "caveats": [
+        "For due dates from May 25, 2026, qualifying basic experimental studies involving humans are no longer characterized as NIH clinical trials; use the linked BESH guidance.",
+        "Minimal risk, a single arm, or healthy participants do not by themselves exclude a clinical trial. Confirm the opportunity permits the actual study type."
+      ]
+    },
+    {
+      "id": "nih-besh-implementation-2026",
+      "title": "Implementation of Changes for Basic Experimental Studies with Humans",
+      "agency": "NIH",
+      "source_url": "https://grants.nih.gov/grants/guide/notice-files/NOT-OD-26-067.html",
+      "checked_on": "2026-10-30",
+      "effective_from": "2026-05-25",
+      "content_type": "requirement",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "BESH",
+        "basic experimental studies",
+        "clinical trial",
+        "due date",
+        "NOFO",
+        "human subjects",
+        "2026 policy"
+      ],
+      "tips": [
+        "For covered competing applications with due dates from May 25, 2026, classify qualifying BESH separately from clinical trials.",
+        "A BESH-only application can use a Clinical Trial Not Allowed or Optional opportunity unless the opportunity says otherwise; a separate clinical trial changes that choice.",
+        "Provide the required human-subjects information, but omit clinical-trial-only fields for BESH unless specifically requested."
+      ],
+      "caveats": [
+        "This change does not automatically alter currently funded awards; their established terms continue to govern.",
+        "Other applicable requirements remain. Assess the actual study and date; the label basic or mechanistic is not enough to establish BESH status."
+      ]
+    },
+    {
+      "id": "nih-clinical-statistical-design",
+      "title": "PHS Human Subjects and Clinical Trials Information: Study Design, Outcomes, and Statistical Power",
+      "agency": "NIH",
+      "source_url": "https://grants.nih.gov/grants/how-to-apply-application-guide/forms-i/general/g.500-phs-human-subjects-and-clinical-trials-information.htm",
+      "checked_on": "2026-10-30",
+      "source_sections": [
+        "G.500 Section 4.1",
+        "G.500 Section 4.2",
+        "G.500 Section 4.3"
+      ],
+      "source_version": "FORMS-I; page reports last revised December 2025",
+      "content_type": "requirement",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "clinical trial",
+        "sample size",
+        "power",
+        "effect size",
+        "outcomes",
+        "endpoints",
+        "randomization",
+        "statistics",
+        "masking",
+        "analysis plan"
+      ],
+      "tips": [
+        "Define each important outcome by its priority, measurement, and collection timeframe.",
+        "When the statistical-design attachment applies, specify enrollment, expected effects, power, and analysis methods in relation to those outcomes.",
+        "Match sample-size and analysis methods to intervention delivery and assignment; clustered designs require appropriate methods.",
+        "Keep the study record self-contained while avoiding unnecessary repetition of the research strategy."
+      ],
+      "caveats": [
+        "Required fields depend on study classification, mechanism, and NOFO; this is not a requirement to submit a clinical-trial power attachment for every grant.",
+        "Check current notices, including the 2026 BESH changes, before applying older form instructions."
+      ]
+    },
+    {
+      "id": "nih-clinical-protocol-templates",
+      "title": "Protocol Templates for Clinical Trials",
+      "agency": "NIH",
+      "source_url": "https://www.grants.nih.gov/policy-and-compliance/policy-topics/clinical-trials/protocol-template",
+      "checked_on": "2026-10-30",
+      "content_type": "advice",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "protocol",
+        "clinical trial",
+        "IND",
+        "IDE",
+        "phase 2",
+        "phase 3",
+        "behavioral research",
+        "templates"
+      ],
+      "tips": [
+        "Use the NIH/FDA template as an organizational aid for phase 2 or 3 trials requiring an IND or IDE.",
+        "Consider the separate behavioral and social science template when the study measures those outcomes or tests a behavioral intervention.",
+        "The electronic protocol tool supports shared writing, review assignments, and version control; Word versions are also provided."
+      ],
+      "caveats": [
+        "NIH recommends these templates but does not require their use.",
+        "The templates have defined study scopes; do not assume either is a mandatory or complete protocol for every study design."
+      ]
+    },
+    {
+      "id": "nih-sex-biological-variable",
+      "title": "Sex as a Biological Variable",
+      "agency": "NIH",
+      "source_url": "https://orwh.od.nih.gov/sex-as-biological-variable",
+      "checked_on": "2026-10-30",
+      "content_type": "requirement",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "sex as biological variable",
+        "SABV",
+        "experimental design",
+        "animal studies",
+        "human studies",
+        "analysis",
+        "reporting",
+        "single sex"
+      ],
+      "tips": [
+        "For vertebrate-animal and human studies, plan consideration of sex from the research question through design, analysis, and reporting.",
+        "Provide scientific justification when proposing to study only one sex, using relevant literature, preliminary evidence, or other pertinent considerations.",
+        "Discuss uncertain applicability or design choices with NIH program staff before submission."
+      ],
+      "caveats": [
+        "This expectation is conditional on the research; the page does not supply a universal sample-size rule or require every study to be powered for a sex difference.",
+        "SABV and the inclusion policies for clinical research are related but distinct requirements."
+      ]
+    },
+    {
+      "id": "nih-vertebrate-animals-section",
+      "title": "Vertebrate Animals Section",
+      "agency": "NIH",
+      "source_url": "https://grants.nih.gov/policy-and-compliance/policy-topics/animal-welfare/compliance-topics/vertebrate-animals-section",
+      "checked_on": "2026-10-30",
+      "content_type": "requirement",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "vertebrate animals",
+        "VAS",
+        "animal model",
+        "species",
+        "procedures",
+        "humane endpoints",
+        "tissue harvest"
+      ],
+      "tips": [
+        "Describe live-animal procedures, species, strains, ages, sex, and numbers for every performance site.",
+        "Justify the species and why alternative models cannot achieve the research goals.",
+        "Explain pain and distress minimization, postoperative care where relevant, and humane endpoints.",
+        "Place scientific justification for animal numbers and biological variables in the Research Strategy; address nonstandard euthanasia justification in the designated supplemental form."
+      ],
+      "caveats": [
+        "Applicability includes animals obtained or euthanized for tissue harvest and custom-antibody production.",
+        "The VAS does not replace institutional animal-use review, and it must not be used to evade research-strategy page limits."
+      ]
+    },
+    {
+      "id": "nih-dms-writing-2026",
+      "title": "Writing a Data Management and Sharing Plan",
+      "agency": "NIH",
+      "source_url": "https://www.grants.nih.gov/policy-and-compliance/policy-topics/sharing-policies/dms/writing-dms-plan",
+      "checked_on": "2026-10-30",
+      "source_version": "2026 DMS Plan format; October 6, 2026 genomic-data clarification",
+      "content_type": "requirement",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [
+        "K_SERIES"
+      ],
+      "tags": [
+        "data management",
+        "DMS",
+        "data sharing",
+        "repository",
+        "genomics",
+        "RNA sequencing",
+        "2026 format",
+        "R01"
+      ],
+      "tips": [
+        "For applications subject to a DMS Plan requirement, use the current 2026 format rather than reusing the old narrative template.",
+        "Identify expected data types and repositories, sharing timing and duration, justified limitations, and privacy protections.",
+        "Address genomic-data expectations where applicable, including both human and non-human genomic data."
+      ],
+      "caveats": [
+        "NOT-OD-26-120 removes the DMS Plan requirement for NIH K awards effective October 5, 2026; generic page language should not override that exception.",
+        "Whether a plan is required and which sharing obligations apply depend on the mechanism, data, and current notices."
+      ]
+    },
+    {
+      "id": "nih-k-award-dms-exemption-2026",
+      "title": "Accelerated Implementation of Data Management and Sharing Plan Changes for NIH Career Development (K) Awards",
+      "agency": "NIH",
+      "source_url": "https://www.grants.nih.gov/grants/guide/notice-files/NOT-OD-26-120.html",
+      "checked_on": "2026-10-30",
+      "effective_from": "2026-10-05",
+      "content_type": "requirement",
+      "applies_to": [
+        "K_SERIES"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "K23",
+        "K08",
+        "K99",
+        "career development",
+        "DMS",
+        "data management",
+        "exemption",
+        "2026 policy",
+        "RPPR",
+        "Just-in-Time"
+      ],
+      "tips": [
+        "As of this notice, NIH K-award applicants no longer need to submit a DMS Plan.",
+        "The change also covers pending applications, pre-award requests, and active K awards, including DMS Plan updates through RPPR.",
+        "Use this immediate implementation date when older K-award guidance still refers to an October 2027 change."
+      ],
+      "caveats": [
+        "The notice changes the DMS Plan requirement; it does not move the other dates or provisions in NOT-OD-26-098.",
+        "Do not interpret removal of a plan attachment as blanket permission to disregard other applicable data-sharing, consent, privacy, or award obligations."
+      ]
+    },
+    {
+      "id": "nih-biosketch-common-form",
+      "title": "Biographical Sketch Common Form",
+      "agency": "NIH",
+      "source_url": "https://www.grants.nih.gov/grants-process/write-application/forms-directory/biographical-sketch-common-form",
+      "checked_on": "2026-10-30",
+      "source_version": "Page updated May 2026",
+      "content_type": "requirement",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "biosketch",
+        "Common Form",
+        "SciENcv",
+        "ORCID",
+        "senior key personnel",
+        "qualifications",
+        "2026 forms"
+      ],
+      "tips": [
+        "Prepare the NIH Biographical Sketch Common Form and NIH Supplement through SciENcv, which produces the combined submission PDF.",
+        "Review transferred information for accuracy and completeness rather than assuming an older biosketch converts correctly.",
+        "Check the ORCID and eRA Commons linkage required for the current process."
+      ],
+      "caveats": [
+        "The current common form has no downloadable blank template to complete outside SciENcv; an old Word biosketch is not a substitute.",
+        "Consult the linked implementation and enforcement notices for the specific submission date and document type."
+      ]
+    },
+    {
+      "id": "nih-participant-data-privacy",
+      "title": "Principles and Best Practices for Protecting Participant Privacy",
+      "agency": "NIH",
+      "source_url": "https://www.grants.nih.gov/policy-and-compliance/policy-topics/sharing-policies/dms/privacy/best-practices",
+      "checked_on": "2026-10-30",
+      "content_type": "advice",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "data sharing",
+        "participant privacy",
+        "human data",
+        "biospecimens",
+        "consent",
+        "controlled access",
+        "de-identification",
+        "repository"
+      ],
+      "tips": [
+        "Assess privacy risks and access controls even when data meet a technical or legal definition of de-identification.",
+        "Make future sharing and permitted uses clear in consent and preserve those restrictions when transferring data.",
+        "Coordinate institutional review of sharing conditions and communicate them to repositories and downstream users."
+      ],
+      "caveats": [
+        "These are principles and best practices; they do not replace applicable laws, consent terms, institutional decisions, or repository agreements.",
+        "A determination that a project is not human-subjects research does not by itself settle the privacy risks of sharing its data."
+      ]
+    },
+    {
+      "id": "nih-genomic-data-sharing-overview",
+      "title": "Genomic Data Sharing Policy Overview",
+      "agency": "NIH",
+      "source_url": "https://grants.nih.gov/policy-and-compliance/policy-topics/sharing-policies/gds/overview",
+      "checked_on": "2026-10-30",
+      "content_type": "framework",
+      "applies_to": [
+        "NIH_ALL"
+      ],
+      "not_applicable_to": [],
+      "tags": [
+        "GDS",
+        "genomics",
+        "transcriptomics",
+        "RNA sequencing",
+        "methylation",
+        "nonhuman data",
+        "dbGaP",
+        "institutional certification",
+        "data sharing"
+      ],
+      "tips": [
+        "Assess GDS applicability using the planned scale and type of human or non-human genomic data and any institute-specific expectations.",
+        "Plan appropriate repositories, submission timing, and responsible handling of controlled-access data.",
+        "For applicable human genomic-data submissions, plan for institutional certification with the responsible institutional officials."
+      ],
+      "caveats": [
+        "The overview lists examples and exceptions; an assay name such as RNA sequencing alone does not settle applicability.",
+        "Reconcile generic DMS Plan language with current mechanism-specific notices. The K-award DMS Plan exception does not itself establish that a project is outside GDS scope."
+      ]
+    }
+  ]
+}

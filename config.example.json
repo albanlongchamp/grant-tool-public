@@ -1,0 +1,41 @@
+{
+  "sources": [
+    {
+      "name": "my-grants",
+      "path": "/absolute/path/to/your/grant/folder",
+      "default_role": "ownership_uncertain"
+    }
+  ],
+  "data_dir": ".local",
+  "workers": 4,
+  "vocabulary": {
+    "topics": {
+      "example_topic": "\\bexample[ -]topic\\b"
+    },
+    "synonyms": {
+      "example_topic": ["example topic", "sample topic"]
+    }
+  },
+  "refresh": {
+    "enabled": false,
+    "canonical_host": "my-shared-grants-host",
+    "settle_seconds": 60,
+    "publications": {
+      "queries": [
+        "research reproducibility"
+      ],
+      "initial_days": 365,
+      "max_records": 1000,
+      "reconcile_records": 100
+    },
+    "nih": {
+      "queries": [
+        "research reproducibility"
+      ],
+      "rolling_years": 6,
+      "max_records": 2000,
+      "max_requests": 300
+    },
+    "guidance": {}
+  }
+}
