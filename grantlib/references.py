@@ -455,6 +455,40 @@ def _pubmed(body, result):
         result['limitations'].append('No abstract was supplied by PubMed for this record.')
 
 
+def pmid_for_doi(doi, *, transport=None):
+    """Find the single PubMed ID indexed for a DOI, or None when PubMed has none or several.
+
+    PubMed's directional notice links make it the better source for retraction
+    checks, so DOI-only references are mapped before re-resolution. Only the DOI
+    is sent, as an esearch [doi] field query.
+    """
+    requested = normalize_identifier(doi)
+    if requested['kind'] != 'doi':
+        raise ReferenceInputError('Supply a DOI to map to PubMed.')
+    url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?' + urlencode({
+        'db': 'pubmed', 'retmode': 'json', 'term': requested['value'] + '[doi]', 'retmax': 2,
+        'tool': 'grantstudio_reference_resolver'})
+    try:
+        response = (transport or _network)(url, timeout=TIMEOUT, max_bytes=MAX_BYTES)
+    except (OSError, TimeoutError):
+        raise ReferenceNetworkError('The public reference service could not be reached within the request limit.') from None
+    if (not isinstance(response, Response) or type(response.status) is not int
+            or not isinstance(response.headers, dict) or not isinstance(response.body, bytes)):
+        raise ReferenceProtocolError('The reference transport returned an invalid response.')
+    if response.status == 429:
+        raise ReferenceRateLimited(_retry_after({str(k).lower(): str(v) for k, v in response.headers.items()}))
+    if response.status != 200:
+        raise ReferenceNetworkError(f'The public reference service returned HTTP {response.status}.')
+    try:
+        ids = json.loads(response.body)['esearchresult']['idlist']
+        if not isinstance(ids, list):
+            raise TypeError
+    except (ValueError, KeyError, TypeError, UnicodeError):
+        raise ReferenceProtocolError('PubMed returned an invalid identifier search result.') from None
+    pmids = [_known_id(str(i), 'pmid') for i in ids]
+    return pmids[0] if len(pmids) == 1 and pmids[0] else None
+
+
 def lookup_bibliographic(text, *, transport=None, rows=3):
     """Crossref free-text lookup of one reference-list entry; returns ranked candidates, not a verdict.
 

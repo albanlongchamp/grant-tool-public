@@ -55,8 +55,11 @@ def initialize(connection):
       attempt_key TEXT PRIMARY KEY, status TEXT NOT NULL, detail TEXT, attempted_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS reference_checks (
       identity_key TEXT PRIMARY KEY, checked_at TEXT NOT NULL, status TEXT NOT NULL,
-      provider TEXT, flags TEXT NOT NULL, notices TEXT, previous_flags TEXT NOT NULL, changed INTEGER NOT NULL);
+      provider TEXT, flags TEXT NOT NULL, notices TEXT, previous_flags TEXT NOT NULL, changed INTEGER NOT NULL,
+      resolved_pmid TEXT);
     ''')
+    if 'resolved_pmid' not in {row[1] for row in connection.execute('PRAGMA table_info(reference_checks)')}:
+        connection.execute('ALTER TABLE reference_checks ADD COLUMN resolved_pmid TEXT')
 
 
 # ---------------------------------------------------------------- identity
@@ -118,6 +121,34 @@ def remember(store, snapshot, *, identity_basis='explicit_identifier', match=Non
             c.execute('INSERT OR IGNORE INTO library_proposal_links VALUES (?,?,?,?)',
                       (library_id, proposal_link['proposal_id'], proposal_link['reference_record_id'], stamp))
         return _entry(c, c.execute('SELECT * FROM library_references WHERE id=?', (library_id,)).fetchone())
+
+
+def resolve_with_pubmed_preference(identifier, *, transport=None):
+    """Resolve an identifier; a DOI is first mapped to its PubMed record when one exists.
+
+    Returns (snapshot, resolved_pmid). The PubMed snapshot keeps the requested DOI
+    so library identity covers both identifiers. Mapping failures fall back to the
+    DOI record silently; rate limits propagate.
+    """
+    requested = references.normalize_identifier(identifier)
+    if requested['kind'] == 'pmid':
+        return references.resolve(identifier, transport=transport), None
+    pmid = None
+    try:
+        pmid = references.pmid_for_doi(requested['value'], transport=transport)
+    except references.ReferenceRateLimited:
+        raise
+    except references.ReferenceError:
+        pmid = None
+    if pmid:
+        snapshot_ = references.resolve(pmid, transport=transport)
+        if snapshot_.get('status') == 'resolved':
+            found_doi = (snapshot_.get('identifiers') or {}).get('doi')
+            if found_doi in (None, requested['value']):
+                snapshot_['identifiers']['doi'] = requested['value']
+                snapshot_.setdefault('limitations', []).append('PubMed record selected through an exact [doi] field search for the requested DOI.')
+                return snapshot_, pmid
+    return references.resolve(identifier, transport=transport), None
 
 
 def _entry(connection, row, *, include_abstract=False):
@@ -292,7 +323,7 @@ def harvest(store, archive_db, *, project=None, limit=10, include_unidentified=F
     for item in queue['identifiers'][:budget]:
         budget -= 1
         try:
-            snapshot_ = references.resolve(item['identifier'], transport=transport)
+            snapshot_, _pmid = resolve_with_pubmed_preference(item['identifier'], transport=transport)
         except references.ReferenceRateLimited:
             result['warnings'].append('The public reference service asked to slow down; call again later for the remaining items.')
             break
@@ -309,8 +340,8 @@ def harvest(store, archive_db, *, project=None, limit=10, include_unidentified=F
         entry = remember(store, snapshot_)
         with store.connect(True) as c:
             _record_citations(c, entry['id'], item['occurrences'])
-        result['added'].append({'id': entry['id'], 'identity_key': item['identity_key'], 'title': entry['title'],
-                                'year': entry['year'], 'identity_basis': 'explicit_identifier',
+        result['added'].append({'id': entry['id'], 'identity_key': entry['identity_key'], 'observed_identifier': item['identity_key'],
+                                'title': entry['title'], 'year': entry['year'], 'identity_basis': 'explicit_identifier',
                                 'documents': len({o['document_id'] for o in item['occurrences']})})
     if include_unidentified:
         for item in queue['entries']:
@@ -341,7 +372,7 @@ def harvest(store, archive_db, *, project=None, limit=10, include_unidentified=F
                                              'best_candidate': best and {'doi': best['doi'], 'title': best['title'], 'confidence': confidence}})
                 continue
             try:
-                snapshot_ = references.resolve(best['doi'], transport=transport)
+                snapshot_, _pmid = resolve_with_pubmed_preference(best['doi'], transport=transport)
             except references.ReferenceError as error:
                 with store.connect(True) as c:
                     _attempt(c, item['attempt_key'], 'error', str(error))
@@ -361,7 +392,7 @@ def harvest(store, archive_db, *, project=None, limit=10, include_unidentified=F
             result['added'].append({'id': entry['id'], 'identity_key': entry['identity_key'], 'title': entry['title'],
                                     'year': entry['year'], 'identity_basis': 'crossref_bibliographic_match',
                                     'confidence': confidence, 'documents': len({o['document_id'] for o in item['occurrences']})})
-    processed_ids = {a['identity_key'] for a in result['added']} | {u.get('identity_key') for u in result['unresolved']}
+    processed_ids = {a.get('observed_identifier', a['identity_key']) for a in result['added']} | {u.get('identity_key') for u in result['unresolved']}
     processed_entries = {a.get('entry_text') for a in result['unresolved'] if a.get('entry_text')} | {
         a['title'] for a in result['added'] if a['identity_basis'] == 'crossref_bibliographic_match'}
     remaining_ids = [i for i in queue['identifiers'] if i['identity_key'] not in processed_ids]
@@ -383,8 +414,10 @@ def search(store, query='', *, project=None, offset=0, limit=10, include_abstrac
             entry = _entry(c, row, include_abstract=True)
             if project and project not in entry['cited_in']['projects'] and project not in entry['used_by_proposals']:
                 continue
+            # The original reference-list wording of a fuzzy match stays searchable.
             haystack = ' '.join(filter(None, [entry['title'], ' '.join(json.loads(row['snapshot']).get('authors', [])),
-                                              entry['journal'], str(entry['year'] or ''), entry.get('abstract') or ''])).lower()
+                                              entry['journal'], str(entry['year'] or ''), entry.get('abstract') or '',
+                                              (entry.get('match') or {}).get('entry_text') or ''])).lower()
             hits = sum(1 for w in words if w in haystack)
             if words and hits == 0:
                 continue
@@ -439,6 +472,7 @@ def checks(connection, identity_keys=None):
     for row in rows:
         if wanted is None or row['identity_key'] in wanted:
             result[row['identity_key']] = {'checked_at': row['checked_at'], 'status': row['status'], 'provider': row['provider'],
+                                           'resolved_pmid': row['resolved_pmid'],
                                            'flags': json.loads(row['flags']), 'previous_flags': json.loads(row['previous_flags']),
                                            'changed': bool(row['changed']), 'notices': json.loads(row['notices']) if row['notices'] else None}
     return result
@@ -517,7 +551,7 @@ def recheck(store, *, proposal_id=None, limit=20, stale_days=DEFAULT_STALE_DAYS,
         # "Previous" is everything already known: the snapshot plus the last recorded check.
         previous = summary['items'][key]['flags']
         try:
-            fresh = references.resolve(str(identifier), transport=transport)
+            fresh, resolved_pmid = resolve_with_pubmed_preference(str(identifier), transport=transport)
         except references.ReferenceRateLimited:
             result['warnings'].append('The public reference service asked to slow down; call again later for the remaining items.')
             break
@@ -526,19 +560,20 @@ def recheck(store, *, proposal_id=None, limit=20, stale_days=DEFAULT_STALE_DAYS,
             continue
         if fresh.get('status') != 'resolved':
             with store.connect(True) as c:
-                c.execute('INSERT OR REPLACE INTO reference_checks VALUES (?,?,?,?,?,?,?,?)',
-                          (key, now.isoformat(), fresh.get('status', 'unresolved'), fresh.get('provider'), _json(previous), None, _json(previous), 0))
+                c.execute('INSERT OR REPLACE INTO reference_checks VALUES (?,?,?,?,?,?,?,?,?)',
+                          (key, now.isoformat(), fresh.get('status', 'unresolved'), fresh.get('provider'), _json(previous), None, _json(previous), 0, None))
             result['checked'].append({'identity_key': key, 'title': record.get('title'), 'status': fresh.get('status', 'unresolved'),
                                       'detail': 'The identifier no longer resolves to a single record; confirm the reference manually.'})
             continue
         flags = notice_flags(fresh.get('publication_notices'))
         changed = flags != previous
         with store.connect(True) as c:
-            c.execute('INSERT OR REPLACE INTO reference_checks VALUES (?,?,?,?,?,?,?,?)',
+            c.execute('INSERT OR REPLACE INTO reference_checks VALUES (?,?,?,?,?,?,?,?,?)',
                       (key, now.isoformat(), 'checked', fresh.get('provider'), _json(flags), _json(fresh.get('publication_notices')),
-                       _json(previous), int(changed)))
-        entry = {'identity_key': key, 'title': record.get('title'), 'status': 'checked', 'flags': flags,
-                 'labels': [FLAG_LABELS[f] for f in flags], 'changed': changed, 'previous_flags': previous}
+                       _json(previous), int(changed), resolved_pmid))
+        entry = {'identity_key': key, 'title': record.get('title'), 'status': 'checked', 'provider': fresh.get('provider'),
+                 'resolved_pmid': resolved_pmid, 'flags': flags, 'labels': [FLAG_LABELS[f] for f in flags],
+                 'changed': changed, 'previous_flags': previous}
         result['checked'].append(entry)
         if changed and set(flags) - set(previous):
             result['newly_flagged'].append(entry)
@@ -548,5 +583,5 @@ def recheck(store, *, proposal_id=None, limit=20, stale_days=DEFAULT_STALE_DAYS,
     result['flagged'] = after['flagged']
     result['limitations'] = ['Flags come from the provider record (PubMed CommentsCorrections and publication types, or Crossref update/relation fields); '
                              'an absent flag does not prove the paper is unretracted.',
-                             'PubMed is preferred when a PMID is known because its notice links are directional and more complete.']
+                             'PubMed is preferred because its notice links are directional and more complete; a DOI-only reference is first mapped to its PubMed record through an exact [doi] search, and falls back to Crossref when PubMed has none.']
     return result

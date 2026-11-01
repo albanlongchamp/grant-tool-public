@@ -50,9 +50,16 @@ class FakeNetwork:
         self.calls.append(url)
         parts = urlsplit(url)
         if parts.hostname == 'eutils.ncbi.nlm.nih.gov':
-            pmid = parse_qs(parts.query)['id'][0]
+            query = parse_qs(parts.query)
+            if 'esearch' in parts.path:
+                # Only the unidentified entry's DOI is indexed in this invented PubMed.
+                ids = ['87654321'] if query['term'] == ['10.9999/unidentified[doi]'] else []
+                return ref.Response(200, {}, json.dumps({'esearchresult': {'idlist': ids}}).encode())
+            pmid = query['id'][0]
             if pmid == '12345678':
                 return pubmed(article(pmid, identifiers='<ArticleId IdType="doi">10.9999/pubmedonly</ArticleId>'))
+            if pmid == '87654321':
+                return pubmed(article(pmid, identifiers='<ArticleId IdType="doi">10.9999/unidentified</ArticleId>'))
             return ref.Response(200, {}, b'<PubmedArticleSet></PubmedArticleSet>')
         if parts.path == '/works':
             return crossref_search(self.bibliographic)
@@ -113,10 +120,12 @@ class ReferenceLibraryTests(unittest.TestCase):
             self.assertEqual([a['identity_key'] for a in first['added']], ['doi:10.9999/fictional'])
             self.assertEqual(first['added'][0]['documents'], 2)
             self.assertEqual((first['remaining'], first['library_total']), (1, 1))
-            self.assertEqual(len(network.calls), 1)
+            self.assertEqual(len(network.calls), 2)   # PubMed [doi] mapping (none) then Crossref
             second = lib.harvest(self.store, self.archive, limit=5, include_unidentified=True)
             self.assertEqual([(a['identity_key'], a['identity_basis']) for a in second['added']],
-                             [('pmid:12345678', 'explicit_identifier'), ('doi:10.9999/unidentified', 'crossref_bibliographic_match')])
+                             [('pmid:12345678', 'explicit_identifier'), ('pmid:87654321', 'crossref_bibliographic_match')])
+            fuzzy_record = lib.snapshot(self.store, second['added'][1]['id'])
+            self.assertEqual((fuzzy_record['provider'], fuzzy_record['canonical']), ('pubmed', {'pmid': '87654321', 'doi': '10.9999/unidentified'}))
             self.assertGreaterEqual(second['added'][1]['confidence'], lib.MATCH_THRESHOLD)
             self.assertEqual((second['already_in_library'], second['remaining'], second['library_total']), (1, 0, 3))
             sent = [parse_qs(urlsplit(c).query)['query.bibliographic'][0] for c in network.calls if '/works?' in c]
@@ -224,10 +233,13 @@ class RetractionRecheckTests(unittest.TestCase):
         calls = []
         def network(url, **kwargs):
             calls.append(url)
+            if 'esearch' in url:
+                return ref.Response(200, {}, json.dumps({'esearchresult': {'idlist': []}}).encode())
             if 'eutils' in url:
                 return pubmed(article(links=retraction))
             return crossref(DOI='10.9999/other', title=['Other invented work'])
         fresh = datetime.now(timezone.utc)
+        self.assertTrue(network)
         with patch('grantlib.references._network', network):
             untouched = lib.recheck(self.store, proposal_id=self.proposal['id'], now=fresh)
             self.assertEqual((untouched['due'], untouched['checked'], calls), (0, [], []))
@@ -261,6 +273,8 @@ class RetractionRecheckTests(unittest.TestCase):
         from datetime import datetime, timedelta, timezone
         later = datetime.now(timezone.utc) + timedelta(days=60)
         def network(url, **kwargs):
+            if 'esearch' in url:
+                return ref.Response(200, {}, json.dumps({'esearchresult': {'idlist': []}}).encode())
             if 'eutils' in url:
                 return ref.Response(200, {}, b'<PubmedArticleSet></PubmedArticleSet>')
             return ref.Response(500, {}, b'')
@@ -274,11 +288,39 @@ class RetractionRecheckTests(unittest.TestCase):
         self.assertEqual(recorded['pmid:12345678']['status'], 'not_found')
         self.assertNotIn('doi:10.9999/other', recorded)
 
+    def test_doi_only_reference_is_rechecked_through_its_pubmed_record(self):
+        from datetime import datetime, timedelta, timezone
+        retraction = '<CommentsCorrections RefType="RetractionIn"><RefSource>Invent J. 2026</RefSource><PMID>1</PMID></CommentsCorrections>'
+        calls = []
+        def network(url, **kwargs):
+            calls.append(url)
+            if 'esearch' in url:
+                ids = ['55555555'] if '10.9999%2Fother%5Bdoi%5D' in url or '10.9999/other[doi]' in unquote(url) else []
+                return ref.Response(200, {}, json.dumps({'esearchresult': {'idlist': ids}}).encode())
+            if 'efetch' in url:
+                return pubmed(article('55555555', links=retraction, identifiers='<ArticleId IdType="doi">10.9999/other</ArticleId>'))
+            return crossref(DOI='10.9999/other', title=['Other invented work'])
+        later = datetime.now(timezone.utc) + timedelta(days=60)
+        with patch('grantlib.references._network', network):
+            result = lib.recheck(self.store, now=later, limit=5)
+        other = next(c for c in result['checked'] if c['identity_key'] == 'doi:10.9999/other')
+        self.assertEqual((other['provider'], other['resolved_pmid'], other['flags']), ('pubmed', '55555555', ['retracted']))
+        self.assertFalse(any('api.crossref.org/works/10.9999%2Fother' in c for c in calls))
+        with self.store.connect() as c:
+            self.assertEqual(lib.checks(c)['doi:10.9999/other']['resolved_pmid'], '55555555')
+        self.assertIsNone(ref.pmid_for_doi('10.9999/none', transport=lambda *a, **k: ref.Response(200, {}, json.dumps({'esearchresult': {'idlist': ['1', '2']}}).encode())))
+        with self.assertRaises(ref.ReferenceInputError):
+            ref.pmid_for_doi('12345678')
+        with self.assertRaises(ref.ReferenceProtocolError):
+            ref.pmid_for_doi('10.9999/x', transport=lambda *a, **k: ref.Response(200, {}, b'junk'))
+        snapshot, pmid = lib.resolve_with_pubmed_preference('10.9999/other', transport=lambda *a, **k: ref.Response(500, {}, b'') if 'esearch' in a[0] else crossref(DOI='10.9999/other'))
+        self.assertEqual((snapshot['provider'], pmid), ('crossref', None))
+
     def test_export_marks_flagged_entries(self):
         from grantlib.bibliography import Bibliography
         with self.store.connect(True) as c:
-            c.execute('INSERT INTO reference_checks VALUES (?,?,?,?,?,?,?,?)',
-                      ('pmid:12345678', '2026-03-01T00:00:00+00:00', 'checked', 'pubmed', '["retracted"]', None, '[]', 1))
+            c.execute('INSERT INTO reference_checks VALUES (?,?,?,?,?,?,?,?,?)',
+                      ('pmid:12345678', '2026-03-01T00:00:00+00:00', 'checked', 'pubmed', '["retracted"]', None, '[]', 1, None))
         proposal = self.store.get(self.proposal['id'])
         reference = proposal['references'][0]
         from grantlib.claim_review import reference_source
