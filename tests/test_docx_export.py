@@ -113,6 +113,43 @@ class DocxExportTests(unittest.TestCase):
         links = [r.attrib['Target'] for r in parts['word/_rels/document.xml.rels'] if r.attrib.get('TargetMode') == 'External']
         self.assertEqual(links, [url])
 
+    def test_reference_styles_add_a_formatted_list_and_superscript_numerals(self):
+        p = proposal()
+        publication = {'id': 'R_fict', 'layer': 'publication', 'title': 'Fictional paired study', 'text': 'Invented abstract.',
+                       'source_uri': 'https://pubmed.ncbi.nlm.nih.gov/12345678/',
+                       'metadata': {'locator': 'Abstract', 'role': 'literature', 'evidence_status': 'publication_not_independently_verified',
+                                    'canonical': {'pmid': '12345678', 'doi': '10.9999/fictional'}, 'authors': ['Example Author', 'Second Writer'],
+                                    'author_parts': [{'family': 'Author', 'given': 'Example'}, {'family': 'Writer', 'given': 'Second'}],
+                                    'journal': 'Invented Journal', 'journal_abbreviation': 'Invent J', 'year': 2024, 'volume': '12', 'issue': '3', 'pages': '100-110'}}
+        p['artifacts'][0]['context']['sources'].append(publication)
+        p['artifacts'][0]['markdown'] += '\n\nA published fictional result supports the design [[R_fict]], as does the earlier plan [[P_example]][[R_fict]].'
+        with self.assertRaises(ValueError):
+            export_docx(p, ARTIFACT_ID, style='chicago')
+        for style, marker in (('vancouver', '[2]'), ('nature', None), ('cell', '(Author and Writer, 2024)')):
+            with self.subTest(style=style):
+                doc = unpack(export_docx(p, ARTIFACT_ID, style=style))['word/document.xml']
+                content = texts(doc)
+                self.assertIn('References', content)
+                self.assertNotIn('[[R_fict]]', content)
+                self.assertLess(content.index('References'), content.index('Investigator review notes'))
+                self.assertLess(content.index('A published fictional result'), content.index('References'))
+                self.assertIn('Author E, Writer S. Fictional paired study. Invent J. 2024;12(3):100-110.' if style == 'vancouver' else
+                              'Author, E. & Writer, S. Fictional paired study. Invent J 12, 100–110 (2024).' if style == 'nature' else
+                              'Author, E., and Writer, S. (2024). Fictional paired study. Invent J 12, 100–110.', content)
+                self.assertIn('[2] Fictional paired study — Abstract.', content)
+                superscripts = [r for r in doc.iter('{' + W + '}vertAlign') if r.get('{' + W + '}val') == 'superscript']
+                if style == 'nature':
+                    self.assertTrue(superscripts)
+                    body = next(par for par in doc.iter('{' + W + '}p') if 'A published fictional result' in ''.join(par.itertext()))
+                    self.assertIn('design2, as does the earlier plan1,2.', ''.join(body.itertext()))
+                else:
+                    self.assertFalse(superscripts)
+                    self.assertIn(marker, content)
+                if style == 'cell':
+                    self.assertIn('earlier plan (Author and Writer, 2024)[1].', content)
+        plain = texts(unpack(export_docx(p, ARTIFACT_ID))['word/document.xml'])
+        self.assertNotIn('Style:', plain)
+
     def test_unknown_citation_remains_visible_in_notes(self):
         p = proposal()
         p['artifacts'][0]['markdown'] += '\n\nUnverified claim [[P_missing]].'

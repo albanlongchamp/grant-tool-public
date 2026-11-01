@@ -29,7 +29,7 @@ Search results are not automatically retained proposal citations. Missing eviden
 
 ## Read and retain publication evidence
 
-Resolve an explicit observed PMID/DOI with `grants_resolve_reference` using the current proposal revision. Do not submit private grant paragraphs as public lookup inputs. Inspect the returned identity, publication notices, limitations, and abstract. `grants_read_reference` continues the retained abstract without replacing it with a newer one.
+When a claim needs literature, call `grants_find_references` with explicit public topic terms (never proposal prose), optionally restricted by year or sorted by `most_cited`. Compare candidates on abstract fit, publication type, retraction flags, and iCite relative citation ratio, and prefer the primary report over a review for a specific finding. Resolve the chosen paper, or an explicit observed PMID/DOI, with `grants_resolve_reference` using the current proposal revision. Do not submit private grant paragraphs as public lookup inputs. Inspect the returned identity, publication notices, limitations, and abstract. `grants_read_reference` continues the retained abstract without replacing it with a newer one.
 
 When full text is needed, call `grants_fetch_full_text` with an explicit PMCID. Read `grants_read_full_text` pages; continue truncated text using `grants_read_publication_paragraph` and the same document/paragraph IDs. Inspect source version, license basis, abstract/body scope, and omitted material. A retrieved article is not evidence that all of it was read.
 
@@ -79,6 +79,6 @@ MCP cannot confirm or retire memory. Use only actual investigator-confirmed reco
 
 Before relying on a current deadline, eligibility condition, study classification, or submission requirement, use `grants_verify_official_source` on the actual applicable official notice/instructions. Read relevant windows through `grants_read_official_snapshot` using the same snapshot ID. Cached summaries, an activity code, or a successful fetch do not establish applicability or compliance; unresolved live retrieval stays unresolved.
 
-Export the intended saved `artifact_id` through `grants_export` as Markdown or Word. The returned path belongs to the MCP server and is not an uploaded attachment or public URL. Inspect source notes, reading-scope qualifications, and unresolved inputs. Generic Word layout needs separate sponsor-specific formatting and rendered review before submission.
+Export the intended saved `artifact_id` through `grants_export` as Markdown or Word, choosing the funder's or journal's reference `style` (`vancouver` for NIH unless told otherwise). The export writes a companion RIS file for EndNote or Zotero; `grants_format_references` previews the library in any style. The returned path belongs to the MCP server and is not an uploaded attachment or public URL. Inspect source notes, reading-scope qualifications, and unresolved inputs. Generic Word layout needs separate sponsor-specific formatting and rendered review before submission.
 
 Software verification and deterministic review rules do not establish scientific usefulness. Inspect actual prose against the sources and investigator intent; use [comparative evaluation](../../../docs/MCP_EVALUATION.md) for measured quality claims.

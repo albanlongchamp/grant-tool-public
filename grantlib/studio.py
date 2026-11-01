@@ -1238,24 +1238,58 @@ def _baseline_notes(baseline, sources):
     return '\n'.join(lines)
 
 
-def export_markdown(proposal, artifact_id):
-    item = next((a for a in proposal['artifacts'] if a['id'] == _identifier(artifact_id)), None)
-    if item is None:
-        raise KeyError('Draft version not found.')
-    sources = {s['id']: s for s in (item.get('context') or {}).get('sources', [])}
-    questions = item.get('structured', {}).get('open_questions', [])
+REFERENCES_MARKER = '\n\n---\n\n## References\n'
+
+
+def _export_content(item):
+    """The saved draft plus its change summary and open questions, before citation substitution."""
     content = item['markdown']
     changes = item.get('structured', {}).get('change_summary', '')
     if changes:
         content += ('\n\n---\n\n## Changes from selected version\n\n'
                     'Model-authored explanation; check it against the draft and measured comparison.\n\n' + changes)
+    questions = item.get('structured', {}).get('open_questions', [])
     if questions:
         content += '\n\n---\n\n## Unresolved investigator inputs\n\n'
         content += '\n'.join('- ' + q for q in questions)
+    return content
+
+
+def cited_bibliography(proposal, artifact_id, style):
+    """Resolve one saved version's citation markers against its retained sources in a style."""
+    from .bibliography import Bibliography
+    item = next((a for a in proposal['artifacts'] if a['id'] == _identifier(artifact_id)), None)
+    if item is None:
+        raise KeyError('Draft version not found.')
+    sources = {s['id']: s for s in (item.get('context') or {}).get('sources', [])}
+    return Bibliography(_export_content(item), sources, proposal.get('references', []), style)
+
+
+def export_markdown(proposal, artifact_id, style=None):
+    """Canonical Markdown export.
+
+    Without a style, citations become [n] and the source notes are the only
+    reference list. With a style, the same numbering is kept (or author-year
+    labels are substituted) and a formatted References section follows the
+    draft, ahead of the review appendices.
+    """
+    item = next((a for a in proposal['artifacts'] if a['id'] == _identifier(artifact_id)), None)
+    if item is None:
+        raise KeyError('Draft version not found.')
+    sources = {s['id']: s for s in (item.get('context') or {}).get('sources', [])}
+    content = _export_content(item)
     judgments = claim_review.export_reviews(item)
-    used = list(dict.fromkeys(CITATION.findall(content)))
-    numbers = {source_id: index + 1 for index, source_id in enumerate(used)}
-    text = CITATION.sub(lambda m: f'[{numbers[m[1]]}]', content)
+    if style is None:
+        used = list(dict.fromkeys(CITATION.findall(content)))
+        numbers = {source_id: index + 1 for index, source_id in enumerate(used)}
+        text = CITATION.sub(lambda m: f'[{numbers[m[1]]}]', content)
+    else:
+        cited = cited_bibliography(proposal, artifact_id, style)
+        used, numbers = cited.used, cited.numbers
+        text = cited.substitute(content)
+        references = cited.markdown()
+        if references:
+            text += REFERENCES_MARKER + references.removeprefix('## References\n')
     memory_notes = _memory_notes(item.get('model_metadata', {}).get('selected_memory', []))
     if memory_notes:
         # Recorded memory text is literal input, not draft citation syntax.

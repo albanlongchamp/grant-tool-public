@@ -8,6 +8,7 @@ from pathlib import Path
 import math
 import time
 
+from . import bibliography
 from .studio import ACTIVE, Service, export_markdown
 from .providers import CodexProvider, checked_generator
 
@@ -181,10 +182,23 @@ class GrantHarness:
         from .claim_review import review_queue
         return review_queue(self.get(proposal_id), artifact_id, offset=offset, limit=limit)
 
-    def export(self, proposal_id, artifact_id, format='md'):
+    def export(self, proposal_id, artifact_id, format='md', style=bibliography.DEFAULT_STYLE):
+        """Export one saved version; style selects the reference list and in-text form.
+
+        style=None keeps the plain numbered source-note export without a formatted
+        reference list. ris/csl return the cited publications as RIS or CSL-JSON
+        for EndNote, Zotero or Mendeley.
+        """
+        if style is not None:
+            bibliography.check_style(style)
         if format == 'md':
-            return export_markdown(self.get(proposal_id), artifact_id)
+            return export_markdown(self.get(proposal_id), artifact_id, style=style)
         if format == 'docx':
             from .docx_export import export_docx
-            return export_docx(self.get(proposal_id), artifact_id)
-        raise ValueError('Export format must be md or docx.')
+            return export_docx(self.get(proposal_id), artifact_id, style=style)
+        if format in ('ris', 'csl'):
+            from .studio import cited_bibliography
+            cited = cited_bibliography(self.get(proposal_id), artifact_id, style or bibliography.DEFAULT_STYLE)
+            items = cited.csl_items()
+            return bibliography.ris(items) if format == 'ris' else bibliography.csl_json(items)
+        raise ValueError('Export format must be md, docx, ris or csl.')

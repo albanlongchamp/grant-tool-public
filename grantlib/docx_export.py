@@ -23,7 +23,7 @@ ET.register_namespace('w', W)
 ET.register_namespace('r', R)
 BODY_WIDTH = 9360  # Letter portrait, one-inch margins.
 _INVALID_XML = re.compile('[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]')
-_INLINE = re.compile(r'\[([^\]\n]+)\]\((https?://(?:[^\s()]|\([^()\s]*\))+)\)|\*\*([^*\n]+)\*\*|(?<!\*)\*([^*\n]+)\*(?!\*)|`([^`\n]+)`|\[(\d+)\]|https?://[^\s<>]+')
+_INLINE = re.compile(r'\[([^\]\n]+)\]\((https?://(?:[^\s()]|\([^()\s]*\))+)\)|\*\*([^*\n]+)\*\*|(?<!\*)\*([^*\n]+)\*(?!\*)|`([^`\n]+)`|\[(\d+(?:[,–]\d+)*)\]|https?://[^\s<>]+')
 _LIST = re.compile(r'^( *)(?:([-+*])\s+|(\d+)[.)]\s+)(.+)$')
 _HEADING = re.compile(r'^\s*(#{1,6})\s+(.+?)\s*#*\s*$')
 _FENCE = re.compile(r'^ {0,3}(`{3,}|~{3,})(.*)$')
@@ -126,7 +126,9 @@ def _literal_caption_pairs(markdown):
 
 
 class _Document:
-    def __init__(self, citation_numbers, literal_blocks=None):
+    def __init__(self, citation_numbers, literal_blocks=None, *, superscript=False):
+        self.superscript = superscript
+        self.in_appendix = False
         self.root = _w('document')
         self.body = _child(self.root, 'body')
         self.rels = ET.Element('Relationships', xmlns=REL)
@@ -140,12 +142,14 @@ class _Document:
         self.num_count = 0
         self.literal_blocks = literal_blocks or {}
 
-    def run(self, parent, text, *, bold=False, italic=False, code=False, link=False):
+    def run(self, parent, text, *, bold=False, italic=False, code=False, link=False, superscript=False):
         if not text:
             return
         run = _child(parent, 'r')
-        if bold or italic or code or link:
+        if bold or italic or code or link or superscript:
             prop = _child(run, 'rPr')
+            if superscript:
+                _child(prop, 'vertAlign', val='superscript')
             if bold:
                 _child(prop, 'b')
             if italic:
@@ -192,7 +196,11 @@ class _Document:
             elif match[5] is not None:
                 self.run(parent, match[5], bold=bold, code=True)
             elif match[6] is not None:
-                if int(match[6]) in self.numbers:
+                cited = [int(n) for n in re.split(r'[,–]', match[6])]
+                if self.superscript and not self.in_appendix and all(n in self.numbers for n in cited):
+                    # Nature/JAMA-style superscript numerals in the draft body only.
+                    self.run(parent, match[6], bold=bold, superscript=True)
+                elif len(cited) == 1 and cited[0] in self.numbers:
                     self.hyperlink(parent, match[0], anchor='Source_' + match[6], bold=bold)
                 else:
                     self.run(parent, match[0], bold=bold)
@@ -426,16 +434,21 @@ def _styles(language):
     return _xml(styles)
 
 
-def export_docx(proposal, artifact_id):
+def export_docx(proposal, artifact_id, style=None):
     """Return a DOCX containing one immutable draft and its review appendices.
 
-    Source references use the selected artifact's retained snapshot. Unsupported
+    Source references use the selected artifact's retained snapshot. With a
+    reference style, the formatted References section follows the draft body and
+    numeric superscript styles render superscript numerals. Unsupported
     image/LaTeX notation is rejected explicitly rather than silently discarded or
     represented as an editable figure/equation. Callers choose where bytes go.
     """
-    from .studio import CITATION, _baseline_notes, export_markdown
+    from .bibliography import STYLES, check_style
+    from .studio import CITATION, REFERENCES_MARKER, _baseline_notes, cited_bibliography, export_markdown
 
-    markdown = export_markdown(proposal, artifact_id)
+    if style is not None:
+        check_style(style)
+    markdown = export_markdown(proposal, artifact_id, style=style)
     artifact = next(a for a in proposal['artifacts'] if a['id'] == artifact_id)
     if len(markdown) > 300000:
         raise ValueError('This Word export exceeds the supported text size.')
@@ -448,14 +461,25 @@ def export_docx(proposal, artifact_id):
         raise ValueError('Word export needs a supported editable equation before exporting LaTeX notation.')
     # The exact saved draft is the export prefix. Do not infer its boundary
     # from headings: commentary or a quoted example may repeat those headings.
-    body_numbers = {}
-    def number_body(match):
-        number = body_numbers.setdefault(match[1], len(body_numbers) + 1)
-        return f'[{number}]'
-    main = CITATION.sub(number_body, artifact['markdown'])
+    if style is None:
+        body_numbers = {}
+        def number_body(match):
+            number = body_numbers.setdefault(match[1], len(body_numbers) + 1)
+            return f'[{number}]'
+        main = CITATION.sub(number_body, artifact['markdown'])
+    else:
+        main = cited_bibliography(proposal, artifact_id, style).substitute(artifact['markdown'])
     if not markdown.startswith(main):
         raise ValueError('The exported draft does not match its saved version.')
     appendix = markdown[len(main):]
+    references_block = ''
+    if style is not None:
+        start = appendix.find(REFERENCES_MARKER)
+        if start >= 0:
+            end = appendix.find('\n\n---\n\n', start + len(REFERENCES_MARKER))
+            end = len(appendix) if end < 0 else end
+            references_block = appendix[start + len('\n\n---\n\n'):end]
+            appendix = appendix[:start] + appendix[end:]
     # The canonical export has a source-notes appendix at the end.
     source_boundary = markdown.rfind('\n---\n\nSource notes for investigator review\n')
     if source_boundary < len(main):
@@ -478,11 +502,15 @@ def export_docx(proposal, artifact_id):
                 token += '_'
             literal_blocks[token] = 'Read excerpt: ' + excerpt
             appendix = appendix.replace(needle, token + '\n  Locator:')
-    document = _Document(source_numbers, literal_blocks)
+    document = _Document(source_numbers, literal_blocks,
+                         superscript=style is not None and STYLES[style]['citation'] == 'superscript')
     first_line = next((line for line in main.splitlines() if line.strip()), '')
     if not _HEADING.match(first_line):
         document.paragraph(artifact.get('title') or 'Grant proposal', style='Title')
     document.markdown(main, title=True)
+    if references_block:
+        document.markdown(references_block)
+    document.in_appendix = True
     document.paragraph('Investigator review notes', style='Heading1', page_break=True)
     finding_introductions, anchor_captions = set(), set()
     for key in ('revision_check', 'draft_check'):

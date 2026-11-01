@@ -34,6 +34,10 @@ The connected model writes the Markdown passed to `grants_save_draft`. The serve
 
 Evidence gathering uses durable queued/running/completed/failed/cancelled jobs. The MCP process owns its active work. Observation timeout does not create another job; recovery requires evidence that the recorded owner has disappeared. Shutdown requests cancellation of owned work. Historical generation metadata remains readable for old/developer artifacts without changing the current no-inference product boundary.
 
+## Reference library and citation styles
+
+`publication_search.search` queries PubMed live (esearch, efetch) for explicit public terms and enriches the returned PMIDs with NIH iCite influence metrics; failures of the metrics call degrade to a warning. `references.resolve` snapshots carry structured author names, journal abbreviation, volume, issue, and pages. `bibliography` converts snapshots to CSL-JSON, substitutes draft markers (numbered, superscript, or author-year), renders the built-in styles, and writes RIS. No citation-processor package or style download is involved; the style set is fixed in code.
+
 ## Publication reading and explicit retention
 
 `references.resolve` accepts one explicit DOI or PMID and uses fixed public endpoints with bounded requests, identity checks, and throttling. No grant passage accompanies a lookup. A retained bibliographic/abstract record establishes identity and reading scope, not scientific support.

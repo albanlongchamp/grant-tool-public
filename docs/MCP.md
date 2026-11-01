@@ -48,6 +48,7 @@ Read local funding-call text through `grants_read_rfp`, continuing with `text_wi
 | `grants_status`, `grants_setup_workspace`, `grants_index_archive`, `grants_read_rfp` | Workspace diagnostics, minimal intake, explicit archive indexing, and local funding-call reading |
 | `grants_search_archive`, `grants_read_archive_passage` | Discover and read indexed original passages with ownership and locators |
 | `grants_search_funded_projects`, `grants_search_guidance`, `grants_search_publications` | Search stored public discovery collections and inspect freshness |
+| `grants_find_references`, `grants_format_references` | Find candidate papers live on PubMed with NIH iCite influence metrics; render the retained library in a citation style or as RIS / CSL-JSON |
 | `grants_verify_official_source`, `grants_read_official_snapshot` | Fetch and read an immutable official-page snapshot |
 | `grants_list_proposals`, `grants_get_proposal`, `grants_create_proposal`, `grants_update_brief` | Reuse proposals and maintain explicit briefs |
 | `grants_gather_evidence`, `grants_get_evidence` | Build and read retained evidence packets |
@@ -66,7 +67,7 @@ List/read tools provide bounded pages or text windows. Follow `next_offset`, `ne
 1. List proposals and reuse the matching one. Create a new brief only when needed, with an actual `title` and `question`; optional fields include funder, mechanism, opportunity URL, due date, language, constraints, notes, keywords, and project labels.
 2. Read the proposal and pass its exact `revision` as `expected_revision` to `grants_gather_evidence`. Keep its job ID and inspect it until terminal. Do not duplicate a task after an observation timeout.
 3. Refresh the proposal revision and read `grants_get_evidence` pages, including source roles and coverage warnings. Search results alone are not retained citations.
-4. Resolve a paper using `grants_resolve_reference` and a bare PMID or DOI. Read its retained abstract with `grants_read_reference`. Identity resolution does not verify a claim.
+4. To find papers, call `grants_find_references` with explicit public topic terms (PubMed field tags such as `[tiab]` or `[mh]` are allowed), optional `min_year`/`max_year`, and `sort` of `relevance`, `newest`, or `most_cited`. Candidates carry PubMed Best Match rank, publication types, retraction/correction flags, and iCite `citation_count`, `relative_citation_ratio` (1.0 is the NIH field average), and `nih_percentile`. Read the abstract, prefer the primary report over a review when supporting a specific finding, and never send proposal prose as a query. Resolve a chosen paper using `grants_resolve_reference` and a bare PMID or DOI. Read its retained abstract with `grants_read_reference`. Identity resolution does not verify a claim.
 5. If accessible full text is needed, use `grants_fetch_full_text` with the explicit PMCID. Read paragraph pages, continue any truncated paragraph, and inspect extraction limits. Call `grants_retain_publication_passage` for relevant exact paragraph IDs; cite the returned `F_` source only after reading it. A downloaded article is not automatically evidence in every draft.
 6. Draft in the connected conversation. Save through `grants_save_draft` with exact citations such as `[[P_...]]`, `[[R_...]]`, or `[[F_...]]`, the inspected revision, and an explicit intended `base_artifact_id` when versions exist. A new save has assistant-import authorship, citation checks, and a measured word count; it has no hidden model assessment.
 7. Read the saved artifact and call `grants_get_review_queue` for that exact version. Register consequential draft quotations with `grants_add_claim`, read their evidence, and use `grants_assess_claim` to record the current assistant's judgment.
@@ -102,7 +103,13 @@ Gather a new evidence packet after changing selected memory. Historical draft sn
 
 ## Export and shared-host operation
 
-`grants_export` saves one explicit artifact as `md` or `docx` under private server-controlled `mcp-exports/` storage. It returns a local path, byte size, and hash. It does not upload a file or create a public URL. Word output is an editing document with source notes, not a sponsor-formatting certificate.
+`grants_export` saves one explicit artifact as `md`, `docx`, `ris`, or `csl` under private server-controlled `mcp-exports/` storage. It returns a local path, byte size, and hash. It does not upload a file or create a public URL. Word output is an editing document with source notes, not a sponsor-formatting certificate.
+
+### Reference styles
+
+Drafts cite by stable source ID (`[[R_...]]`, `[[F_...]]`, `[[P_...]]`); the `style` argument decides how those markers and the reference list appear in the export. Available styles: `vancouver` (NLM/ICMJE, the default and the usual NIH choice), `nature`, `science`, `cell`, `nejm`, `jama`, and `apa`. Numbered styles keep first-appearance numbering; `nature` and `jama` render superscript numerals in Word; `cell` and `apa` substitute author-year labels, merge adjacent citations, add `2024a`/`2024b` suffixes when needed, and sort the list alphabetically. A formatted **References** section follows the draft body, before the review appendices. Local archive passages, memory, and decisions stay numbered and point to the source notes. Formatting is deterministic text from retained metadata; it does not verify a reference.
+
+Every `md` or `docx` export also writes a companion `.ris` file of the cited publications for EndNote, Zotero, or Mendeley import (`companion_ris`). `format="ris"` or `format="csl"` exports only those records. `grants_format_references` renders the whole retained library (or selected `R_` IDs) in a style, or as RIS / CSL-JSON text, without exporting a draft.
 
 Git distributes the software, not private databases. To share ongoing proposal history, run the same stdio server on a host with authorized access to the configured source folders. The SSH launcher accepts explicit host/interpreter/config settings:
 

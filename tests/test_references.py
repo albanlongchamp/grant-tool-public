@@ -61,8 +61,15 @@ class ReferenceTests(TestCase):
         self.assertEqual(result['identifiers'], {'pmid': None, 'doi': '10.9999/fictional'})
         self.assertEqual(result['title'], 'Fictional paired study')
         self.assertEqual(result['authors'], ['Example Author', 'Fictional Consortium'])
+        self.assertEqual(result['author_parts'], [{'family': 'Author', 'given': 'Example'}, {'literal': 'Fictional Consortium'}])
         self.assertEqual(result['abstract'], 'Invented abstract.')
         self.assertEqual(result['year'], 2025)
+        self.assertEqual((result['volume'], result['issue'], result['pages'], result['journal_abbreviation'], result['work_type']),
+                         (None, None, None, None, None))
+        result, _ = self.resolve('10.9999/FICTIONAL', crossref(volume='12', issue='3', page='100-110',
+                                                                **{'short-container-title': ['Invent J'], 'type': 'journal-article'}))
+        self.assertEqual((result['volume'], result['issue'], result['pages'], result['journal_abbreviation'], result['work_type']),
+                         ('12', '3', '100-110', 'Invent J', 'journal-article'))
         self.assertIsNone(result['publication_notices']['retracted'])
         self.assertFalse(result['publication_notices']['complete'])
         self.assertIn('no reverse-update search', result['publication_notices']['scope'])
@@ -83,9 +90,26 @@ class ReferenceTests(TestCase):
         self.assertEqual(result['year'], 2024)
         self.assertEqual(result['abstract'], 'METHODS: Fictional methods.\n\nRESULTS: No real results.')
         self.assertEqual(result['authors'], ['Example Author', 'Invented Group'])
+        self.assertEqual(result['author_parts'], [{'family': 'Author', 'given': 'Example'}, {'literal': 'Invented Group'}])
+        self.assertEqual(result['work_type'], 'journal-article')
+        self.assertIsNone(result['volume'])
         self.assertTrue(result['publication_notices']['retracted'])
         self.assertIsNone(result['publication_notices']['is_retraction_notice'])
         self.assertEqual(result['publication_notices']['relations'][0]['pmid'], '87654321')
+
+    def test_pubmed_volume_pages_abbreviation_and_suffix_are_captured(self):
+        xml = article().replace('<JournalIssue>', '<JournalIssue><Volume>12</Volume><Issue>3</Issue>').replace(
+            '<Journal><Title>Invented Journal</Title>', '<Journal><ISOAbbreviation>Invent J</ISOAbbreviation><Title>Invented Journal</Title>').replace(
+            '</AuthorList>', '</AuthorList><Pagination><MedlinePgn>100-10</MedlinePgn></Pagination>').replace(
+            '<LastName>Author</LastName>', '<LastName>Author</LastName><Suffix>Jr</Suffix>')
+        result, _ = self.resolve('12345678', pubmed(xml))
+        self.assertEqual((result['volume'], result['issue'], result['pages'], result['journal_abbreviation']), ('12', '3', '100-10', 'Invent J'))
+        self.assertEqual(result['author_parts'][0], {'family': 'Author', 'given': 'Example', 'suffix': 'Jr'})
+        self.assertEqual(result['authors'][0], 'Example Author Jr')
+        xml = article().replace('</AuthorList>', '</AuthorList><Pagination><StartPage>5</StartPage><EndPage>9</EndPage></Pagination>')
+        self.assertEqual(self.resolve('12345678', pubmed(xml))[0]['pages'], '5-9')
+        xml = article().replace('</AuthorList>', '</AuthorList><ELocationID EIdType="pii">e0001</ELocationID>')
+        self.assertEqual(self.resolve('12345678', pubmed(xml))[0]['pages'], 'e0001')
 
     def test_notice_directions_and_publication_types_are_distinct(self):
         relations = ''.join(f'<CommentsCorrections RefType="{kind}"><PMID>87654321</PMID></CommentsCorrections>'

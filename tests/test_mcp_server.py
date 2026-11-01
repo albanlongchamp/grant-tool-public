@@ -389,6 +389,78 @@ class MCPServerTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(len(final['artifacts']), 1)
             self.assertTrue(all(job['status'] == 'completed' for job in final['jobs']))
 
+    async def test_reference_library_find_format_and_styled_export_with_companion_ris(self):
+        from grantlib import publication_search
+        from tests.test_publication_search import FakeTransport, esearch, icite
+        from tests.test_references import article, pubmed
+        harness = self.harness()
+        async with Client(create_server(self.config, harness=harness)) as client:
+            tools = {tool.name: tool for tool in (await client.list_tools()).tools}
+            self.assertTrue(tools['grants_find_references'].annotations.open_world_hint)
+            self.assertTrue(tools['grants_find_references'].annotations.read_only_hint)
+            self.assertEqual(tools['grants_export'].input_schema['properties']['style']['enum'][0], 'vancouver')
+            self.assertEqual(tools['grants_export'].input_schema['properties']['format']['enum'], ['md', 'docx', 'ris', 'csl'])
+            proposal, source = await self.prepared(client)
+            transport = FakeTransport({'esearch': esearch(['12345678']), 'efetch': pubmed(article()),
+                                       'icite': icite([{'pmid': 12345678, 'citation_count': 5, 'relative_citation_ratio': 1.2}])})
+            with patch.object(publication_search, '_network', transport):
+                found = await self.call(client, 'grants_find_references', query='fictional seedling irrigation', limit=1, abstract_chars=10)
+            self.assertEqual(found['candidates'][0]['pmid'], '12345678')
+            self.assertEqual(found['candidates'][0]['citation_count'], 5)
+            self.assertEqual(found['candidates'][0]['abstract'], 'METHODS: F')
+            self.assertTrue(found['candidates'][0]['abstract_truncated'])
+            self.assertIn('grants_resolve_reference', found['next_step'])
+            self.assertIn('public topic words', await self.error(client, 'grants_find_references', query='see [[P_1]] PRIVATE'))
+            self.assertFalse(any('PRIVATE' in url for url in transport.calls))
+            calls = []
+            def resolver(url, **kwargs):
+                calls.append(url)
+                return pubmed(article().replace('<JournalIssue>', '<JournalIssue><Volume>12</Volume>').replace(
+                    '</AuthorList>', '</AuthorList><Pagination><MedlinePgn>100-110</MedlinePgn></Pagination>'))
+            with patch('grantlib.references._network', resolver):
+                resolved = await self.call(client, 'grants_resolve_reference', proposal_id=proposal['id'],
+                                           expected_revision=proposal['revision'], identifier='12345678')
+            self.assertEqual(len(calls), 1)
+            reference = resolved['reference']
+            self.assertEqual((reference['volume'], reference['pages']), ('12', '100-110'))
+            library = await self.call(client, 'grants_format_references', proposal_id=proposal['id'], style='nature')
+            self.assertEqual(library['count'], 1)
+            self.assertEqual(library['entries'][0]['entry'], 'Author, E. & Invented Group. Fictional paired experiment. *Invented Journal* **12**, 100–110 (2024).')
+            self.assertEqual([s['style'] for s in library['available_styles']][:2], ['vancouver', 'nature'])
+            ris = await self.call(client, 'grants_format_references', proposal_id=proposal['id'], format='ris', reference_ids=[reference['id']])
+            self.assertIn('TY  - JOUR\nAU  - Author, Example\n', ris['text'])
+            await self.error(client, 'grants_format_references', proposal_id=proposal['id'], reference_ids=['R_missing'])
+            await self.error(client, 'grants_format_references', proposal_id=proposal['id'], style='chicago')
+            body = ('Local plan [[' + source['id'] + ']] and a published fictional experiment [[' + reference['id'] + ']].')
+            saved = await self.call(client, 'grants_save_draft', proposal_id=proposal['id'],
+                                    expected_revision=resolved['revision'], markdown=body)
+            self.assertEqual(saved['citation_check']['unknown_ids'], [])
+            exported = await self.call(client, 'grants_export', proposal_id=proposal['id'],
+                                       artifact_id=saved['artifact_id'], format='md', style='cell')
+            text = Path(exported['local_path']).read_text()
+            self.assertIn('Local plan [1] and a published fictional experiment (Author and Invented Group, 2024).', text)
+            self.assertIn('## References', text)
+            self.assertIn('Author, E., and Invented Group (2024). Fictional paired experiment. *Invented Journal* *12*, 100–110.', text)
+            self.assertLess(text.index('## References'), text.index('Source notes for investigator review'))
+            companion = Path(exported['companion_ris']['local_path'])
+            self.assertEqual(companion.parent, Path(exported['local_path']).parent)
+            self.assertEqual(stat.S_IMODE(companion.stat().st_mode), 0o600)
+            self.assertEqual(exported['companion_ris']['sha256'], hashlib.sha256(companion.read_bytes()).hexdigest())
+            self.assertIn('AN  - 12345678', companion.read_text())
+            self.assertNotIn(source['id'], companion.read_text())
+            csl = await self.call(client, 'grants_export', proposal_id=proposal['id'], artifact_id=saved['artifact_id'], format='csl')
+            items = json.loads(Path(csl['local_path']).read_text())
+            self.assertEqual([item['id'] for item in items], [reference['id']])
+            self.assertNotIn('companion_ris', csl)
+            docx = await self.call(client, 'grants_export', proposal_id=proposal['id'], artifact_id=saved['artifact_id'], format='docx', style='nature')
+            with zipfile.ZipFile(docx['local_path']) as archive:
+                xml = archive.read('word/document.xml').decode()
+            self.assertIn('superscript', xml)
+            self.assertIn('Author, E. &amp; Invented Group. Fictional paired experiment.', xml)
+            plain = await self.call(client, 'grants_export', proposal_id=proposal['id'], artifact_id=saved['artifact_id'], format='md')
+            self.assertIn('Style: Vancouver', Path(plain['local_path']).read_text())
+            await self.error(client, 'grants_export', proposal_id=proposal['id'], artifact_id=saved['artifact_id'], style='chicago')
+
     async def test_actual_stdio_auto_protocol_uses_only_synthetic_archive_and_survives_tool_errors(self):
         await self.stdio_case('auto')
 

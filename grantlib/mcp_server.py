@@ -15,7 +15,7 @@ import sqlite3
 from typing import Any, Literal
 import uuid
 
-from . import guidance, library, nih, refresh
+from . import bibliography, guidance, library, nih, refresh
 from .harness import GrantHarness
 from .onboarding import OnboardingTools, open_workspace
 from .references import ReferenceError
@@ -160,6 +160,51 @@ class GrantTools(OnboardingTools):
         result = search(self.harness.db.parent, query, limit=limit)
         result['results'] = [_excerpt(row, field='abstract', max_chars=12000) for row in result['results']]
         result['freshness'] = refresh.status(self.harness.db.parent)['layers']['publications']
+        return result
+
+    def grants_find_references(self, query: str, limit: int = 10,
+                               sort: Literal['relevance', 'newest', 'most_cited'] = 'relevance',
+                               min_year: int | None = None, max_year: int | None = None,
+                               abstract_chars: int = 1500) -> dict[str, Any]:
+        """Search PubMed live for candidate references to a public topic and report NIH iCite influence metrics (citation_count, relative_citation_ratio where 1.0 is the NIH field average, nih_percentile). Send only explicit public topic terms or PubMed field tags, never proposal prose or private text. Candidates are discovery, not evidence: read the abstract, prefer the primary source over a review when supporting a specific finding, check notice_flags, then add the chosen paper with grants_resolve_reference (PMID) before citing it."""
+        from . import publication_search
+        _text(query, 'query', 500); _integer(limit, 'limit', 1, publication_search.MAX_RESULTS)
+        _integer(abstract_chars, 'abstract_chars', 0, 20000)
+        try:
+            result = publication_search.search(query, limit=limit, sort=sort, min_year=min_year, max_year=max_year)
+        except publication_search.PublicationSearchError as error:
+            raise ValueError(str(error)) from None
+        for candidate in result['candidates']:
+            full = candidate.get('abstract') or ''
+            candidate['abstract'] = full[:abstract_chars]
+            candidate['abstract_truncated'] = len(full) > abstract_chars
+        return result
+
+    def grants_format_references(self, proposal_id: str, style: Literal['vancouver', 'nature', 'science', 'cell', 'nejm', 'jama', 'apa'] = 'vancouver',
+                                 reference_ids: list[str] | None = None,
+                                 format: Literal['markdown', 'ris', 'csl'] = 'markdown') -> dict[str, Any]:
+        """Render the proposal's retained reference library (or selected R_ IDs) in a citation style, or as RIS / CSL-JSON text for EndNote, Zotero or Mendeley. Formatting is deterministic text from retained metadata; it is not verification. Drafts still cite by [[R_...]] ID; the export applies the style."""
+        bibliography.check_style(style)
+        proposal = self.harness.get(proposal_id)
+        references = proposal['references']
+        if reference_ids is not None:
+            if not isinstance(reference_ids, list) or not 1 <= len(reference_ids) <= 200:
+                raise ValueError('Select 1 to 200 retained reference IDs, or omit reference_ids for the whole library.')
+            known = {r['id']: r for r in references}
+            missing = [i for i in reference_ids if i not in known]
+            if missing:
+                raise ValueError('Unknown reference IDs for this proposal: ' + ', '.join(missing[:10]))
+            references = [known[i] for i in dict.fromkeys(reference_ids)]
+        items = [bibliography.csl_item(r, r['id']) for r in references]
+        result = {'proposal_id': proposal_id, 'revision': proposal['revision'], 'style': style, 'format': format,
+                  'count': len(items), 'available_styles': bibliography.describe_styles()}
+        if format == 'ris':
+            result['text'] = bibliography.ris(items)
+        elif format == 'csl':
+            result['text'] = bibliography.csl_json([{k: v for k, v in i.items() if k != 'abstract'} for i in items])
+        else:
+            result['entries'] = [{'id': item['id'], 'entry': bibliography.format_entry(item, style),
+                                  'in_text': bibliography.in_text_preview(item, style)} for item in items]
         return result
 
     def grants_verify_official_source(self, url: str, max_chars: int = 12000) -> dict[str, Any]:
@@ -409,19 +454,29 @@ class GrantTools(OnboardingTools):
                 'reading_hint': 'Gather a new evidence packet to use changed memory selections. Historical draft snapshots remain unchanged.'}
 
     def grants_export(self, proposal_id: str, artifact_id: str,
-                       format: Literal['md', 'docx'] = 'docx') -> dict[str, Any]:
-        """Export an explicit saved version to private server-controlled storage. Returns a local file path and hash; no arbitrary destination, browser or network upload."""
-        content = self.harness.export(proposal_id, artifact_id, format)
-        data = content.encode() if isinstance(content, str) else content
+                       format: Literal['md', 'docx', 'ris', 'csl'] = 'docx',
+                       style: Literal['vancouver', 'nature', 'science', 'cell', 'nejm', 'jama', 'apa'] = 'vancouver') -> dict[str, Any]:
+        """Export an explicit saved version to private server-controlled storage. md/docx apply the reference style (numbered or author-year in-text form plus a formatted References section before the review appendices) and also write a companion .ris file of the cited publications for EndNote/Zotero import. ris/csl export only the cited publications. Returns local file paths and hashes; no arbitrary destination, browser or network upload."""
+        bibliography.check_style(style)
         directory = self.harness.db.parent / 'mcp-exports'
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
-        target = directory / (uuid.uuid4().hex + '.' + format)
-        descriptor = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, 'wb') as stream:
-            stream.write(data)
-        return {'proposal_id': proposal_id, 'artifact_id': artifact_id, 'format': format,
-                'local_path': str(target), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(),
-                'location': 'On the MCP server machine; not uploaded or publicly hosted.'}
+        stem = uuid.uuid4().hex
+        def write(kind):
+            content = self.harness.export(proposal_id, artifact_id, kind, style=style)
+            data = content.encode() if isinstance(content, str) else content
+            target = directory / (stem + '.' + kind)
+            descriptor = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(descriptor, 'wb') as stream:
+                stream.write(data)
+            return {'local_path': str(target), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+        result = {'proposal_id': proposal_id, 'artifact_id': artifact_id, 'format': format, 'style': style,
+                  **write(format), 'location': 'On the MCP server machine; not uploaded or publicly hosted.'}
+        if format in ('md', 'docx'):
+            companion = write('ris')
+            result['companion_ris'] = {**companion, 'purpose': 'Cited publications for EndNote, Zotero or Mendeley import.'}
+            if style in ('science',):
+                result['style_note'] = bibliography.STYLES[style]['label']
+        return result
 
     def grants_get_job(self, job_id: str) -> dict[str, Any]:
         """Observe the same durable job; never restarts it. Recover a demonstrably missing owner as failed. Read result_artifact_id only when status is completed."""
@@ -434,7 +489,7 @@ class GrantTools(OnboardingTools):
 
 
 READ_ONLY = {'grants_status', 'grants_search_archive', 'grants_read_archive_passage',
-             'grants_search_publications',
+             'grants_search_publications', 'grants_find_references', 'grants_format_references',
              'grants_read_official_snapshot',
              'grants_search_funded_projects', 'grants_search_guidance', 'grants_list_proposals',
              'grants_get_proposal', 'grants_get_evidence', 'grants_get_artifact',
@@ -506,7 +561,8 @@ def create_server(config_path=None, *, harness=None):
         server.tool(name=name, structured_output=True, annotations=ToolAnnotations(
             read_only_hint=name in READ_ONLY, destructive_hint=False,
             idempotent_hint=name in READ_ONLY or name in {'grants_get_job', 'grants_cancel_job'},
-            open_world_hint=name in {'grants_resolve_reference', 'grants_fetch_full_text', 'grants_verify_official_source'}))(guarded(getattr(api, name)))
+            open_world_hint=name in {'grants_resolve_reference', 'grants_fetch_full_text', 'grants_verify_official_source',
+                                     'grants_find_references'}))(guarded(getattr(api, name)))
     return server
 
 

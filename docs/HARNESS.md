@@ -32,7 +32,7 @@ Use the context manager or close a harness when finished. Its service owns activ
 | `save(proposal_id, markdown, expected_revision=N, base_artifact_id=ID, author="assistant")` | Save caller-authored text as a new child version |
 | `start(proposal_id, "evidence", expected_revision=N)` | Start a local evidence job without inference |
 | `job(job_id)`, `wait(job_id, timeout=SECONDS)`, `cancel(job_id)` | Observe or cancel that same job |
-| `export(proposal_id, artifact_id, format="md")` | Return Markdown text, or Word bytes for `docx` |
+| `export(proposal_id, artifact_id, format="md", style="vancouver")` | Return Markdown text or Word bytes in a reference style (`vancouver`, `nature`, `science`, `cell`, `nejm`, `jama`, `apa`; `None` for plain numbered source notes), or the cited publications as `ris` / `csl` text |
 
 Optional brief fields are `mechanism`, `funder`, `opportunity_url`, `due_date`, `language`, `constraints`, `notes`, `keywords`, and `projects`. Preserve unknown inputs rather than filling them from assumptions. `projects` contains exact configured labels; an empty selection searches broadly.
 

@@ -219,6 +219,16 @@ def _text(node):
     return ' '.join(''.join(node.itertext()).split()) if node is not None else None
 
 
+def _name_parts(family, given, suffix, literal):
+    """Structured author name for citation styles; a collective name stays literal."""
+    if literal:
+        return {'literal': literal}
+    parts = {'family': family or None, 'given': given or None}
+    if suffix:
+        parts['suffix'] = suffix
+    return parts
+
+
 def _notices(scope):
     return {'retracted': None, 'has_correction': None, 'expression_of_concern': None,
             'is_retraction_notice': None, 'is_correction_notice': None,
@@ -229,7 +239,8 @@ def _notices(scope):
 def _snapshot(requested, provider, url, body):
     return {'status': 'not_found', 'requested': requested,
             'identifiers': {'pmid': None, 'doi': None}, 'observed_identifiers': [],
-            'title': None, 'authors': [], 'journal': None, 'year': None, 'abstract': None,
+            'title': None, 'authors': [], 'author_parts': [], 'journal': None, 'journal_abbreviation': None,
+            'year': None, 'volume': None, 'issue': None, 'pages': None, 'work_type': None, 'abstract': None,
             'publication_notices': _notices('No matching metadata record was accepted.'),
             'provider': provider, 'source_url': None, 'metadata_url': url,
             'retrieved_at': datetime.now(timezone.utc).isoformat(),
@@ -267,9 +278,21 @@ def _crossref(data, result):
     authors = work.get('author', [])
     if not isinstance(authors, list):
         raise ReferenceProtocolError('Invalid Crossref author metadata.')
-    result['authors'] = [name for a in authors[:1000] if isinstance(a, dict)
-                         if (name := _plain(' '.join(str(a.get(k) or '') for k in ('given', 'family')))
-                             or _plain(a.get('name')))]
+    result['authors'], result['author_parts'] = [], []
+    for a in authors[:1000]:
+        if not isinstance(a, dict):
+            continue
+        name = (_plain(' '.join(str(a.get(k) or '') for k in ('given', 'family'))) or _plain(a.get('name')))
+        if not name:
+            continue
+        result['authors'].append(name)
+        result['author_parts'].append(_name_parts(_plain(a.get('family')), _plain(a.get('given')), None,
+                                                  _plain(a.get('name')) if not a.get('family') else None))
+    result['journal_abbreviation'] = first('short-container-title')
+    result['volume'] = _plain(work.get('volume')) if isinstance(work.get('volume'), str) else None
+    result['issue'] = _plain(work.get('issue')) if isinstance(work.get('issue'), str) else None
+    result['pages'] = _plain(work.get('page')) if isinstance(work.get('page'), str) else None
+    result['work_type'] = _plain(work.get('type')) if isinstance(work.get('type'), str) else None
     if len(authors) > 1000:
         result['limitations'].append('Author list truncated after 1,000 entries.')
     for field in ('issued', 'published', 'published-print', 'published-online'):
@@ -364,9 +387,27 @@ def _pubmed(body, result):
     if book:
         result['book_title'] = _text(article.find('Book/BookTitle'))
     authors = article.findall('AuthorList/Author')
-    result['authors'] = [name for author in authors[:1000]
-                         if (name := _text(author.find('CollectiveName')) or ' '.join(filter(None,
-                             [_text(author.find(k)) for k in ('ForeName', 'LastName', 'Suffix')])))]
+    result['authors'], result['author_parts'] = [], []
+    for author in authors[:1000]:
+        collective = _text(author.find('CollectiveName'))
+        name = collective or ' '.join(filter(None, [_text(author.find(k)) for k in ('ForeName', 'LastName', 'Suffix')]))
+        if not name:
+            continue
+        result['authors'].append(name)
+        result['author_parts'].append(_name_parts(
+            _text(author.find('LastName')), _text(author.find('ForeName')) or _text(author.find('Initials')),
+            _text(author.find('Suffix')), collective))
+    result['journal_abbreviation'] = _text(article.find('Journal/ISOAbbreviation')) or _text(citation.find('MedlineJournalInfo/MedlineTA'))
+    result['volume'] = _text(article.find('Journal/JournalIssue/Volume'))
+    result['issue'] = _text(article.find('Journal/JournalIssue/Issue'))
+    pages = _text(article.find('Pagination/MedlinePgn'))
+    if not pages:
+        start, end = _text(article.find('Pagination/StartPage')), _text(article.find('Pagination/EndPage'))
+        pages = start + ('-' + end if end and end != start else '') if start else None
+    if not pages:
+        pages = next((_text(n) for n in article.findall('ELocationID') if n.get('EIdType') == 'pii' and _text(n)), None)
+    result['pages'] = pages
+    result['work_type'] = 'book' if book else 'journal-article'
     if len(authors) > 1000:
         result['limitations'].append('Author list truncated after 1,000 entries.')
     date = article.find('Book/PubDate' if book else 'Journal/JournalIssue/PubDate')

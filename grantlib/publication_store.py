@@ -143,7 +143,8 @@ def reader(store, proposal_id, document_id):
 
 def _source(document, paragraph, identifier, created, actor):
     metadata = {key: deepcopy(document.get(key)) for key in
-                ('canonical', 'authors', 'journal', 'year', 'retrieved_at', 'provider',
+                ('canonical', 'authors', 'author_parts', 'journal', 'journal_abbreviation', 'year',
+                 'volume', 'issue', 'pages', 'retrieved_at', 'provider',
                  'article_version', 'article_type', 'license', 'publication_notices', 'provenance', 'coverage', 'limitations')}
     metadata.update(role='literature', evidence_status='publication_not_independently_verified',
                     scope='abstract' if paragraph['kind'] == 'abstract' else 'full_text_excerpt',
