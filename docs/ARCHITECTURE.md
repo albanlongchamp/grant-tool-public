@@ -39,6 +39,7 @@ Evidence gathering uses durable queued/running/completed/failed/cancelled jobs. 
 `publication_search.search` queries PubMed live (esearch, efetch) for explicit public terms and enriches the returned PMIDs with NIH iCite influence metrics; failures of the metrics call degrade to a warning. `references.resolve` snapshots carry structured author names, journal abbreviation, volume, issue, and pages. `bibliography` converts snapshots to CSL-JSON, substitutes draft markers (numbered, superscript, or author-year), renders the built-in styles, and writes RIS. No citation-processor package or style download is involved; the style set is fixed in code.
 
 `reference_library` keeps one shared record per paper in the proposal database, with the archived documents that cited it (`library_citations`), the proposals that adopted it (`library_proposal_links`), and remembered failed lookups (`library_attempts`). Harvesting reads the archive index's observed identifiers and reference-list sections; fuzzy Crossref matches are stored with their confidence and never upgraded silently.
+`reference_library.recheck` re-resolves stale references and records notice flags in `reference_checks`, keyed by PMID or DOI, so exports can mark retracted or corrected entries without rewriting any snapshot.
 
 ## Publication reading and explicit retention
 

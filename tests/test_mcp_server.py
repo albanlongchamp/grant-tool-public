@@ -493,6 +493,18 @@ class MCPServerTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn(adopted['reference_id'], adopted['reading_hint'])
             await self.error(client, 'grants_add_library_reference', proposal_id=proposal['id'],
                              expected_revision=proposal['revision'], library_reference_id=entry['id'])
+            with patch('grantlib.references._network', network):
+                checked = await self.call(client, 'grants_check_references', proposal_id=proposal['id'], force=True)
+            self.assertEqual(checked['checked'][0]['status'], 'checked')
+            self.assertEqual(checked['flagged'], [])
+            self.assertTrue(tools['grants_check_references'].annotations.open_world_hint)
+            body = 'A published fictional study [[' + adopted['reference_id'] + ']].'
+            saved = await self.call(client, 'grants_save_draft', proposal_id=proposal['id'],
+                                    expected_revision=adopted['revision'], markdown=body)
+            exported = await self.call(client, 'grants_export', proposal_id=proposal['id'], artifact_id=saved['artifact_id'], format='md')
+            self.assertEqual(exported['reference_check']['cited_publications'], 1)
+            self.assertEqual((exported['reference_check']['flagged'], exported['reference_check']['unchecked_or_stale']), ([], 0))
+            self.assertIn('no notice flags', exported['reference_check']['advice'])
             formatted = await self.call(client, 'grants_format_references', proposal_id='', scope='library', style='lancet')
             self.assertEqual(formatted['count'], 1)
             self.assertEqual(formatted['entries'][0]['entry'], 'Author E, Fictional Consortium. Fictional paired study. *Invented Journal* 2025; 12: 100–110.')

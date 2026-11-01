@@ -49,7 +49,7 @@ Read local funding-call text through `grants_read_rfp`, continuing with `text_wi
 | `grants_search_archive`, `grants_read_archive_passage` | Discover and read indexed original passages with ownership and locators |
 | `grants_search_funded_projects`, `grants_search_guidance`, `grants_search_publications` | Search stored public discovery collections and inspect freshness |
 | `grants_find_references`, `grants_format_references` | Find candidate papers live on PubMed with NIH iCite influence metrics; render the retained library in a citation style or as RIS / CSL-JSON |
-| `grants_harvest_archive_references`, `grants_search_library`, `grants_add_library_reference` | Build a shared library from the papers your previous applications cited, search it with cited-in provenance, and adopt an entry into a proposal without a new lookup |
+| `grants_harvest_archive_references`, `grants_search_library`, `grants_add_library_reference`, `grants_check_references` | Build a shared library from the papers your previous applications cited, search it with cited-in provenance, adopt an entry into a proposal without a new lookup, and re-check references for retractions before export |
 | `grants_verify_official_source`, `grants_read_official_snapshot` | Fetch and read an immutable official-page snapshot |
 | `grants_list_proposals`, `grants_get_proposal`, `grants_create_proposal`, `grants_update_brief` | Reuse proposals and maintain explicit briefs |
 | `grants_gather_evidence`, `grants_get_evidence` | Build and read retained evidence packets |
@@ -113,6 +113,10 @@ The archive index already records every DOI and `PMID:` string in indexed paragr
 `include_unidentified=True` also sends reference-list entries that carry no identifier to Crossref's bibliographic search. Only the entry text itself leaves the machine, never surrounding prose. A candidate is kept only when its title words, first author, and year agree with the entry; the record is then labelled `crossref_bibliographic_match` with its confidence and a caution to confirm against the original list.
 
 `grants_search_library` ranks entries by query hits, then by how many archived documents cite them, and shows `cited_in`, `used_by_proposals`, identity basis, and notices. `grants_add_library_reference` copies a library record into a proposal's references without a network request and returns the citable `R_` ID. Every `grants_resolve_reference` call also feeds the library, so it grows with your work. `grants_format_references(scope="library")` renders or exports the whole library.
+
+### Retraction re-check before export
+
+`grants_check_references` re-resolves stored references through PubMed (preferred when a PMID is known) or Crossref and records any retraction, expression of concern, or correction that appeared since the snapshot was taken. It checks the next `limit` records not re-checked within `stale_days` (default 30), for one proposal or for the whole shared library when `proposal_id` is empty; `force=True` re-checks everything. Snapshots stay immutable; outcomes live in a separate check table. `grants_export` returns a `reference_check` summary with flagged sources and the count of cited references that are unchecked or stale, and flagged entries are marked in the exported References section (for example **[RETRACTED]**). An absent flag is provider coverage, not proof of a clean record.
 
 ### Reference styles
 

@@ -57,7 +57,7 @@ PDF extraction needs Poppler's `pdftotext`; legacy Word and RTF extraction use m
 3. Find candidate papers on PubMed (with NIH iCite influence metrics), resolve the chosen ones by PMID or DOI, read exact paragraphs, and explicitly retain the passages used.
 4. Let the connected model draft, then save a new version with its evidence citations.
 5. Read the review queue, inspect consequential claims and their sources, and record assistant judgments.
-6. Record actual investigator changes, revise the selected parent, and export the chosen saved version in a reference style (Vancouver/NLM, Nature, Science, Cell, NEJM, JAMA, APA, Lancet, or JCI) with a companion RIS file for EndNote or Zotero.
+6. Record actual investigator changes, revise the selected parent, re-check cited references for retractions, and export the chosen saved version in a reference style (Vancouver/NLM, Nature, Science, Cell, NEJM, JAMA, APA, Lancet, or JCI) with a companion RIS file for EndNote or Zotero.
 
 The assistant can perform this loop through MCP. Citation checks validate identifiers; exact quotation checks validate location; the model and investigator evaluate scientific support. Previous support judgments never silently transfer to a revised draft.
 

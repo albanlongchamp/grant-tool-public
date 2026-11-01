@@ -202,6 +202,7 @@ class Store:
                 a['claims'] = claim_review.claims(c, a)
                 artifacts.append(a)
             p['references'] = claim_review.references(c, proposal_id)
+            p['reference_checks'] = reference_library.checks(c, [reference_library.identity_key(r) for r in p['references'] if reference_library.identity_key(r)])
             p['full_texts'] = publication_store.summaries(c, proposal_id)
             p['publication_passages'] = publication_store.passages(c, proposal_id)
             p['memory_bindings'] = memory.bindings(c, proposal_id)
@@ -1268,7 +1269,8 @@ def cited_bibliography(proposal, artifact_id, style):
     if item is None:
         raise KeyError('Draft version not found.')
     sources = {s['id']: s for s in (item.get('context') or {}).get('sources', [])}
-    return Bibliography(_export_content(item), sources, proposal.get('references', []), style)
+    return Bibliography(_export_content(item), sources, proposal.get('references', []), style,
+                        checks=proposal.get('reference_checks') or {})
 
 
 def export_markdown(proposal, artifact_id, style=None):

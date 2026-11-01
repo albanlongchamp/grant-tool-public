@@ -241,6 +241,14 @@ class GrantTools(OnboardingTools):
                 'already_present': result['already_present'], 'reference': _excerpt(reference, 'abstract', max_chars=4000),
                 'reading_hint': 'Cite as [[' + result['reference_id'] + ']] after reading the abstract with grants_read_reference.'}
 
+    def grants_check_references(self, proposal_id: str = '', limit: int = 20, stale_days: int = 30,
+                                force: bool = False) -> dict[str, Any]:
+        """Re-check references for retraction, expression of concern or correction before export. Re-resolves the next `limit` stale records (unchecked for `stale_days`, or all with force=True) of one proposal, or of the whole shared library when proposal_id is empty, sending only the stored PMID or DOI. Stored snapshots stay immutable; results appear in grants_export's reference_check and as flags on exported entries. An absent flag is not proof of a clean record."""
+        _text(proposal_id, 'proposal_id', 100); _integer(limit, 'limit', 1, reference_library.MAX_PAGE)
+        _integer(stale_days, 'stale_days', 0, 3650)
+        return reference_library.recheck(self.harness.store, proposal_id=proposal_id or None, limit=limit,
+                                         stale_days=stale_days, force=force)
+
     def grants_verify_official_source(self, url: str, max_chars: int = 12000) -> dict[str, Any]:
         """Fetch an official public source live before using a deadline/submission requirement. Saves an immutable source snapshot. Read and interpret the applicable opportunity and linked instructions; retrieval alone does not verify compliance. Never put private proposal text in the URL."""
         from .guidance_refresh import verify
@@ -490,7 +498,7 @@ class GrantTools(OnboardingTools):
     def grants_export(self, proposal_id: str, artifact_id: str,
                        format: Literal['md', 'docx', 'ris', 'csl'] = 'docx',
                        style: Literal['vancouver', 'nature', 'science', 'cell', 'nejm', 'jama', 'apa', 'lancet', 'jci'] = 'vancouver') -> dict[str, Any]:
-        """Export an explicit saved version to private server-controlled storage. md/docx apply the reference style (numbered or author-year in-text form plus a formatted References section before the review appendices) and also write a companion .ris file of the cited publications for EndNote/Zotero import. ris/csl export only the cited publications. Returns local file paths and hashes; no arbitrary destination, browser or network upload."""
+        """Export an explicit saved version to private server-controlled storage. Run grants_check_references first; the result's reference_check lists retraction/correction flags and stale, unchecked references. md/docx apply the reference style (numbered or author-year in-text form plus a formatted References section before the review appendices) and also write a companion .ris file of the cited publications for EndNote/Zotero import. ris/csl export only the cited publications. Returns local file paths and hashes; no arbitrary destination, browser or network upload."""
         bibliography.check_style(style)
         directory = self.harness.db.parent / 'mcp-exports'
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -505,6 +513,20 @@ class GrantTools(OnboardingTools):
             return {'local_path': str(target), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
         result = {'proposal_id': proposal_id, 'artifact_id': artifact_id, 'format': format, 'style': style,
                   **write(format), 'location': 'On the MCP server machine; not uploaded or publicly hosted.'}
+        from .studio import cited_bibliography
+        proposal = self.harness.get(proposal_id)
+        cited = cited_bibliography(proposal, artifact_id, style)
+        cited_keys = {k for item in cited.csl_items() for k in (('pmid:' + item['PMID']) if item.get('PMID') else None,
+                                                                ('doi:' + item['DOI'].lower()) if item.get('DOI') else None) if k}
+        with self.harness.store.connect() as c:
+            status = reference_library.status_for([r for r in proposal['references'] if reference_library.identity_key(r) in cited_keys], c)
+        flagged_sources = [{'source_id': source_id, 'flags': flags, 'labels': [reference_library.FLAG_LABELS[f] for f in flags]}
+                           for source_id, flags in cited.flags.items()]
+        result['reference_check'] = {
+            'cited_publications': len(cited.csl_items()), 'flagged': flagged_sources,
+            'unchecked_or_stale': len(status['stale_identity_keys']), 'stale_days': status['stale_days'],
+            'advice': ('Run grants_check_references for this proposal before submitting; flagged entries are marked in the References section.'
+                       if status['stale_identity_keys'] or flagged_sources else 'All cited publications were re-checked within the staleness window and carry no notice flags.')}
         if format in ('md', 'docx'):
             companion = write('ris')
             result['companion_ris'] = {**companion, 'purpose': 'Cited publications for EndNote, Zotero or Mendeley import.'}
@@ -596,7 +618,7 @@ def create_server(config_path=None, *, harness=None):
             read_only_hint=name in READ_ONLY, destructive_hint=False,
             idempotent_hint=name in READ_ONLY or name in {'grants_get_job', 'grants_cancel_job'},
             open_world_hint=name in {'grants_resolve_reference', 'grants_fetch_full_text', 'grants_verify_official_source',
-                                     'grants_find_references', 'grants_harvest_archive_references'}))(guarded(getattr(api, name)))
+                                     'grants_find_references', 'grants_harvest_archive_references', 'grants_check_references'}))(guarded(getattr(api, name)))
     return server
 
 

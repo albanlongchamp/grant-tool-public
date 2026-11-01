@@ -206,6 +206,91 @@ class ReferenceLibraryTests(unittest.TestCase):
                 lib.remember(self.store, bad)
 
 
+class RetractionRecheckTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.store = Store(Path(self.temp.name))
+        self.proposal = self.store.create({'title': 'Invented project', 'question': 'An invented research question'})
+        clean = ref.resolve('12345678', transport=lambda *a, **k: pubmed(article()))
+        self.proposal = self.store.add_reference(self.proposal['id'], self.proposal['revision'], clean)
+        lib.remember(self.store, clean)
+        doi_only = ref.resolve('10.9999/other', transport=lambda *a, **k: crossref(DOI='10.9999/other', title=['Other invented work']))
+        lib.remember(self.store, doi_only)
+
+    def test_recheck_records_new_retraction_and_export_status_flags_it(self):
+        from datetime import datetime, timedelta, timezone
+        retraction = '<CommentsCorrections RefType="RetractionIn"><RefSource>Invent J. 2026</RefSource><PMID>1</PMID></CommentsCorrections>'
+        calls = []
+        def network(url, **kwargs):
+            calls.append(url)
+            if 'eutils' in url:
+                return pubmed(article(links=retraction))
+            return crossref(DOI='10.9999/other', title=['Other invented work'])
+        fresh = datetime.now(timezone.utc)
+        with patch('grantlib.references._network', network):
+            untouched = lib.recheck(self.store, proposal_id=self.proposal['id'], now=fresh)
+            self.assertEqual((untouched['due'], untouched['checked'], calls), (0, [], []))
+            later = fresh + timedelta(days=60)
+            result = lib.recheck(self.store, proposal_id=self.proposal['id'], now=later)
+        self.assertEqual(result['due'], 1)
+        self.assertEqual(len(calls), 1)
+        self.assertIn('id=12345678', calls[0])
+        self.assertEqual(result['checked'][0]['flags'], ['retracted'])
+        self.assertTrue(result['checked'][0]['changed'])
+        self.assertEqual([e['identity_key'] for e in result['newly_flagged']], ['pmid:12345678'])
+        self.assertEqual(result['flagged'][0]['labels'], ['Retracted'])
+        self.assertEqual(result['remaining'], 0)
+        proposal = self.store.get(self.proposal['id'])
+        self.assertEqual(proposal['reference_checks']['pmid:12345678']['flags'], ['retracted'])
+        self.assertIsNone(proposal['references'][0]['publication_notices']['retracted'])  # snapshot untouched
+        entry = lib.search(self.store, 'paired')['items'][0]
+        self.assertEqual((entry['flags'], entry['last_checked_at']), (['retracted'], later.isoformat()))
+        with self.store.connect() as c:
+            status = lib.status_for(proposal['references'], c, now=later)
+        self.assertEqual(status['flagged'][0]['identity_key'], 'pmid:12345678')
+        self.assertEqual(status['stale_identity_keys'], [])
+        with patch('grantlib.references._network', network):
+            whole = lib.recheck(self.store, limit=1, force=True, now=later)
+        self.assertEqual((whole['references'], whole['due'], len(whole['checked']), whole['remaining']), (2, 2, 1, 1))
+        self.assertEqual(whole['newly_flagged'], [])
+        with self.assertRaises(ValueError):
+            lib.recheck(self.store, limit=0)
+
+    def test_unresolvable_identifier_and_errors_are_reported_without_flags(self):
+        from datetime import datetime, timedelta, timezone
+        later = datetime.now(timezone.utc) + timedelta(days=60)
+        def network(url, **kwargs):
+            if 'eutils' in url:
+                return ref.Response(200, {}, b'<PubmedArticleSet></PubmedArticleSet>')
+            return ref.Response(500, {}, b'')
+        with patch('grantlib.references._network', network):
+            result = lib.recheck(self.store, now=later, limit=5)
+        statuses = {c['identity_key']: c['status'] for c in result['checked']}
+        self.assertEqual(statuses, {'pmid:12345678': 'not_found', 'doi:10.9999/other': 'error'})
+        self.assertEqual(result['flagged'], [])
+        with self.store.connect() as c:
+            recorded = lib.checks(c)
+        self.assertEqual(recorded['pmid:12345678']['status'], 'not_found')
+        self.assertNotIn('doi:10.9999/other', recorded)
+
+    def test_export_marks_flagged_entries(self):
+        from grantlib.bibliography import Bibliography
+        with self.store.connect(True) as c:
+            c.execute('INSERT INTO reference_checks VALUES (?,?,?,?,?,?,?,?)',
+                      ('pmid:12345678', '2026-03-01T00:00:00+00:00', 'checked', 'pubmed', '["retracted"]', None, '[]', 1))
+        proposal = self.store.get(self.proposal['id'])
+        reference = proposal['references'][0]
+        from grantlib.claim_review import reference_source
+        source = reference_source(reference)
+        cited = Bibliography('Claim [[' + reference['id'] + ']].', {reference['id']: source}, proposal['references'], 'vancouver',
+                             checks=proposal['reference_checks'])
+        self.assertEqual(cited.flags, {reference['id']: ['retracted']})
+        self.assertTrue(cited.entries()[0][2].startswith('**[RETRACTED]** Author E, Invented Group.'))
+        plain = Bibliography('Claim [[' + reference['id'] + ']].', {reference['id']: source}, proposal['references'], 'vancouver')
+        self.assertEqual(plain.flags, {})
+
+
 class BibliographicLookupTests(unittest.TestCase):
     def test_lookup_returns_ranked_candidates_and_validates_input(self):
         calls = []

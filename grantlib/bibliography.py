@@ -320,6 +320,15 @@ def _ranges(numbers):
     return ','.join(parts)
 
 
+FLAG_LABELS = {'retracted': 'RETRACTED', 'expression_of_concern': 'Expression of concern',
+               'has_correction': 'Correction issued', 'is_retraction_notice': 'Retraction notice',
+               'is_correction_notice': 'Correction notice', 'is_expression_of_concern_notice': 'Expression-of-concern notice'}
+
+
+def _flags(notices):
+    return [flag for flag in FLAG_LABELS if isinstance(notices, dict) and notices.get(flag)]
+
+
 def in_text_preview(item, style):
     """How one item appears in the draft text under a style (numbered styles show the marker form)."""
     spec = STYLES[check_style(style)]
@@ -343,7 +352,7 @@ class Bibliography:
     references is the proposal's retained reference list; it supplies volume,
     pages and structured authors for full-text sources that lack them.
     """
-    def __init__(self, text, sources, references=(), style=DEFAULT_STYLE):
+    def __init__(self, text, sources, references=(), style=DEFAULT_STYLE, checks=None):
         self.style = check_style(style)
         self.spec = STYLES[self.style]
         self.sources = sources
@@ -355,7 +364,8 @@ class Bibliography:
             for kind in ('pmid', 'doi'):
                 if canonical.get(kind):
                     by_identity.setdefault((kind, str(canonical[kind]).lower()), reference)
-        self.items = {}
+        self.items, self.flags = {}, {}
+        checks = checks or {}
         for source_id in self.used:
             source = sources.get(source_id)
             if not source or source.get('layer') != 'publication':
@@ -364,6 +374,12 @@ class Bibliography:
             canonical = metadata.get('canonical') or {}
             match = next((by_identity[(k, str(canonical[k]).lower())] for k in ('pmid', 'doi')
                           if canonical.get(k) and (k, str(canonical[k]).lower()) in by_identity), None)
+            flags = set(_flags(metadata.get('notices'))) | set(_flags((match or {}).get('publication_notices') or (match or {}).get('notices')))
+            for key in ('pmid:' + str(canonical.get('pmid') or ''), 'doi:' + str(canonical.get('doi') or '').lower()):
+                if not key.endswith(':') and key in checks:
+                    flags |= set(checks[key].get('flags', []))
+            if flags:
+                self.flags[source_id] = sorted(flags)
             if match:
                 for key in ('author_parts', 'authors', 'journal', 'journal_abbreviation', 'year', 'volume', 'issue', 'pages', 'work_type'):
                     if not metadata.get(key) and match.get(key):
@@ -438,6 +454,8 @@ class Bibliography:
                 suffix = self.year_suffix(source_id)
                 if suffix:
                     text = re.sub(r'(\(\d{4})\)', r'\1' + suffix + ')', text, count=1) if re.search(r'\(\d{4}\)', text) else text
+                if source_id in self.flags:
+                    text = '**[' + '; '.join(FLAG_LABELS[f] for f in self.flags[source_id]) + ']** ' + text
             else:
                 source = self.sources.get(source_id)
                 if source is None:

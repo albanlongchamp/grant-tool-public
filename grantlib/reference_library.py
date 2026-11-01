@@ -53,6 +53,9 @@ def initialize(connection):
       reference_record_id TEXT NOT NULL, linked_at TEXT NOT NULL, PRIMARY KEY(reference_id, proposal_id));
     CREATE TABLE IF NOT EXISTS library_attempts (
       attempt_key TEXT PRIMARY KEY, status TEXT NOT NULL, detail TEXT, attempted_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS reference_checks (
+      identity_key TEXT PRIMARY KEY, checked_at TEXT NOT NULL, status TEXT NOT NULL,
+      provider TEXT, flags TEXT NOT NULL, notices TEXT, previous_flags TEXT NOT NULL, changed INTEGER NOT NULL);
     ''')
 
 
@@ -132,6 +135,9 @@ def _entry(connection, row, *, include_abstract=False):
                           'projects': sorted({c['project'] for c in citations if c['project']}),
                           'locations': [{k: c[k] for k in ('relative_path', 'project', 'locator', 'title', 'cycle')} for c in citations[:20]]},
              'used_by_proposals': links, 'created_at': row['created_at'], 'updated_at': row['updated_at']}
+    check = checks(connection, [row['identity_key']]).get(row['identity_key'])
+    entry['flags'] = sorted(set(notice_flags(entry['notices'])) | set((check or {}).get('flags', [])))
+    entry['last_checked_at'] = (check or {}).get('checked_at')
     if include_abstract:
         entry['abstract'] = snapshot.get('abstract')
     return entry
@@ -409,3 +415,138 @@ def add_to_proposal(store, proposal_id, expected_revision, library_id):
     with store.connect(True) as c:
         c.execute('INSERT OR IGNORE INTO library_proposal_links VALUES (?,?,?,?)', (library_id, proposal_id, reference_id, _now()))
     return {'proposal': proposal, 'reference_id': reference_id, 'already_present': False}
+
+
+# ---------------------------------------------------------------- retraction re-check
+
+FLAG_LABELS = {'retracted': 'Retracted', 'expression_of_concern': 'Expression of concern',
+               'has_correction': 'Correction issued', 'is_retraction_notice': 'This record is itself a retraction notice',
+               'is_correction_notice': 'This record is itself a correction notice',
+               'is_expression_of_concern_notice': 'This record is itself an expression-of-concern notice'}
+DEFAULT_STALE_DAYS = 30
+
+
+def notice_flags(notices):
+    notices = notices or {}
+    return sorted(flag for flag in FLAG_LABELS if notices.get(flag))
+
+
+def checks(connection, identity_keys=None):
+    """Latest re-check per identity key (all keys when none are given)."""
+    rows = connection.execute('SELECT * FROM reference_checks').fetchall()
+    wanted = set(identity_keys) if identity_keys is not None else None
+    result = {}
+    for row in rows:
+        if wanted is None or row['identity_key'] in wanted:
+            result[row['identity_key']] = {'checked_at': row['checked_at'], 'status': row['status'], 'provider': row['provider'],
+                                           'flags': json.loads(row['flags']), 'previous_flags': json.loads(row['previous_flags']),
+                                           'changed': bool(row['changed']), 'notices': json.loads(row['notices']) if row['notices'] else None}
+    return result
+
+
+def _parse_time(value):
+    try:
+        return datetime.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _is_stale(record, check, stale_days, now):
+    reference_time = _parse_time((check or {}).get('checked_at')) or _parse_time(record.get('retrieved_at'))
+    if reference_time is None:
+        return True
+    if reference_time.tzinfo is None:
+        reference_time = reference_time.replace(tzinfo=timezone.utc)
+    return (now - reference_time).days >= stale_days
+
+
+def status_for(records, connection, *, stale_days=DEFAULT_STALE_DAYS, now=None):
+    """Flag and staleness summary for a list of reference snapshots (no network)."""
+    now = now or datetime.now(timezone.utc)
+    latest = checks(connection, [identity_key(r) for r in records if identity_key(r)])
+    flagged, stale, items = [], [], {}
+    for record in records:
+        key = identity_key(record)
+        if not key:
+            continue
+        check = latest.get(key)
+        flags = sorted(set(notice_flags(record.get('publication_notices') or record.get('notices'))) | set((check or {}).get('flags', [])))
+        item = {'identity_key': key, 'title': record.get('title'), 'flags': flags,
+                'labels': [FLAG_LABELS[f] for f in flags], 'last_checked_at': (check or {}).get('checked_at'),
+                'stale': _is_stale(record, check, stale_days, now)}
+        items[key] = item
+        if flags:
+            flagged.append(item)
+        if item['stale']:
+            stale.append(key)
+    return {'items': items, 'flagged': flagged, 'stale_identity_keys': stale, 'stale_days': stale_days}
+
+
+def recheck(store, *, proposal_id=None, limit=20, stale_days=DEFAULT_STALE_DAYS, force=False, transport=None, now=None):
+    """Re-resolve references against PubMed/Crossref and record any new retraction, concern or correction.
+
+    proposal_id limits the check to that proposal's references; otherwise the
+    whole shared library is checked. Only the next limit stale records are
+    fetched per call (force treats every record as stale). Stored snapshots stay
+    immutable; the outcome lives in reference_checks and is shown at export.
+    """
+    if type(limit) is not int or not 1 <= limit <= MAX_PAGE:
+        raise ValueError(f'limit must be an integer from 1 to {MAX_PAGE}.')
+    if type(stale_days) is not int or not 0 <= stale_days <= 3650:
+        raise ValueError('stale_days must be an integer from 0 to 3650.')
+    now = now or datetime.now(timezone.utc)
+    if proposal_id:
+        records = store.get(proposal_id)['references']
+    else:
+        with store.connect() as c:
+            records = [json.loads(r['snapshot']) for r in c.execute('SELECT snapshot FROM library_references ORDER BY created_at')]
+    unique = {}
+    for record in records:
+        key = identity_key(record)
+        if key and key not in unique:
+            unique[key] = record
+    with store.connect() as c:
+        summary = status_for(list(unique.values()), c, stale_days=0 if force else stale_days, now=now)
+    due = [unique[k] for k in summary['stale_identity_keys']]
+    result = {'scope': proposal_id or 'library', 'references': len(unique), 'due': len(due), 'checked': [],
+              'newly_flagged': [], 'warnings': [], 'stale_days': stale_days}
+    for record in due[:limit]:
+        canonical = record.get('canonical') or record.get('identifiers') or {}
+        identifier = canonical.get('pmid') or canonical.get('doi')
+        key = identity_key(record)
+        # "Previous" is everything already known: the snapshot plus the last recorded check.
+        previous = summary['items'][key]['flags']
+        try:
+            fresh = references.resolve(str(identifier), transport=transport)
+        except references.ReferenceRateLimited:
+            result['warnings'].append('The public reference service asked to slow down; call again later for the remaining items.')
+            break
+        except references.ReferenceError as error:
+            result['checked'].append({'identity_key': key, 'title': record.get('title'), 'status': 'error', 'detail': str(error)})
+            continue
+        if fresh.get('status') != 'resolved':
+            with store.connect(True) as c:
+                c.execute('INSERT OR REPLACE INTO reference_checks VALUES (?,?,?,?,?,?,?,?)',
+                          (key, now.isoformat(), fresh.get('status', 'unresolved'), fresh.get('provider'), _json(previous), None, _json(previous), 0))
+            result['checked'].append({'identity_key': key, 'title': record.get('title'), 'status': fresh.get('status', 'unresolved'),
+                                      'detail': 'The identifier no longer resolves to a single record; confirm the reference manually.'})
+            continue
+        flags = notice_flags(fresh.get('publication_notices'))
+        changed = flags != previous
+        with store.connect(True) as c:
+            c.execute('INSERT OR REPLACE INTO reference_checks VALUES (?,?,?,?,?,?,?,?)',
+                      (key, now.isoformat(), 'checked', fresh.get('provider'), _json(flags), _json(fresh.get('publication_notices')),
+                       _json(previous), int(changed)))
+        entry = {'identity_key': key, 'title': record.get('title'), 'status': 'checked', 'flags': flags,
+                 'labels': [FLAG_LABELS[f] for f in flags], 'changed': changed, 'previous_flags': previous}
+        result['checked'].append(entry)
+        if changed and set(flags) - set(previous):
+            result['newly_flagged'].append(entry)
+    result['remaining'] = max(0, len(due) - len(result['checked']))
+    with store.connect() as c:
+        after = status_for(list(unique.values()), c, stale_days=stale_days, now=now)
+    result['flagged'] = after['flagged']
+    result['limitations'] = ['Flags come from the provider record (PubMed CommentsCorrections and publication types, or Crossref update/relation fields); '
+                             'an absent flag does not prove the paper is unretracted.',
+                             'PubMed is preferred when a PMID is known because its notice links are directional and more complete.']
+    return result
