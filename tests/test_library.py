@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from grantlib.library import (
-    _prepare_units, curate_document, curate_unit, get_document, ingest, list_documents,
+    _identifiers, _prepare_units, clean_doi, curate_document, curate_unit, get_document, ingest, list_documents,
     load_config, search, stats,
 )
 
@@ -29,6 +29,43 @@ class LibraryTests(unittest.TestCase):
         path = self.source / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text)
+
+    def test_identifier_extraction_repairs_pdf_artifacts(self):
+        # Invented identifiers; shapes mirror what PDF extraction does to reference lists.
+        cases = {
+            'see 10.9999/s00000-018-\n05123-4 next': ['10.9999/s00000-018-05123-4'],      # hyphen inside the DOI, split at a line break
+            'doi:10.9999/j.inv-\nented.2013.01.001.': ['10.9999/j.invented.2013.01.001'],  # hyphenation inserted by the layout
+            'https://doi.org/10.9999/abc.0403312101&rft_id=info:pmid/1&rft.genre=article': ['10.9999/abc.0403312101'],
+            '(doi:10.9999/DVN/EXAMPLE)65 next sentence': ['10.9999/dvn/example'],          # footnote digits after the closing parenthesis
+            'doi: 10.9999/j.inv.2020.12.012.Epub 2021 Jan': ['10.9999/j.inv.2020.12.012'],
+            '10.9999/SLA.0000000000003513.PMID: 31425290': ['10.9999/sla.0000000000003513'],
+            'https://doi.org/10.9999/finv.2018.03101/full': ['10.9999/finv.2018.03101'],
+            '10.9999/journal.pinv.0020427.g001 and 10.9999/journal.pinv.0020427.st002': ['10.9999/journal.pinv.0020427'],
+            'https://doi.org/10.1101/2024.07.04.601982v1': ['10.1101/2024.07.04.601982'],
+            '10.9999/(SICI)1097-0258(19960229)15:4<361::AID-SIM168>3.0.CO;2-4.':
+                ['10.9999/(sici)1097-0258(19960229)15:4<361::aid-sim168>3.0.co;2-4'],
+            '(10.9999/S0140-6736(10)60834-3)': ['10.9999/s0140-6736(10)60834-3'],
+            'doi 10.9999/jinv.1500277/-/DCSupplemental': ['10.9999/jinv.1500277'],
+            'stubs 10.9999/j and 10.9999/tp and 10.9999/nar/ and 10.9999/s00000-020- end': [],
+            'next entry 10.9999/s00000-020-\n2. Author B. Title.': [],
+            'funder 10.13039/501100011033': [],
+            'Nature 2020. doi:10.9999/s00000-020-2345-6. PMID: 12345678': ['10.9999/s00000-020-2345-6'],
+        }
+        for text, expected in cases.items():
+            with self.subTest(text=text):
+                self.assertEqual([i['identifier'] for i in _identifiers(text) if i['kind'] == 'doi'], expected)
+        self.assertEqual([i for i in _identifiers('PMID: 12345678') if i['kind'] == 'pmid'], [{'kind': 'pmid', 'identifier': '12345678'}])
+        self.assertIsNone(clean_doi('10.9999/j'))
+        self.assertEqual(clean_doi('10.9999/J.INV.2020.12.012?utm=x'), '10.9999/j.inv.2020.12.012')
+
+    def test_ingest_stores_cleaned_identifiers(self):
+        self.write('grant/references.txt', 'References\n1. Example A. Title. J Inv. 2020. doi:10.9999/s00000-020-\n01234-5.Epub 2020\n'
+                   '2. Example B. Other. 10.9999/j and 10.9999/abc.123&rft_id=info:pmid/1\n')
+        ingest(self.config)
+        import sqlite3
+        with sqlite3.connect(self.db) as conn:
+            rows = sorted(conn.execute('SELECT identifier FROM identifiers WHERE kind=?', ('doi',)).fetchall())
+        self.assertEqual(rows, [('10.9999/abc.123',), ('10.9999/s00000-020-01234-5',)])
 
     def test_coverage_includes_unsupported_and_locks(self):
         self.write('methods.txt', 'We will measure chlorophyll in leaf tissue.')

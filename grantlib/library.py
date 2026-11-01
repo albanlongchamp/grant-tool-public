@@ -208,14 +208,71 @@ def _extract_cached(path, digest, cache):
     return result
 
 
+_DOI_START = re.compile(r'\b10\.\d{4,9}/[^\s<>"\]\}]+', re.I)
+_DOI_CONTINUATION = re.compile(r'[ \t]*\r?\n?[ \t]*([A-Za-z0-9(][^\s<>"\]\}]+)')
+_DOI_SICI = re.compile(r'<\d+::AID-[^\s<>]+>[^\s<>"\]\}]*')
+_DOI_URL_TAIL = re.compile(r'[&?#].*$')
+_DOI_JUNK_TAIL = re.compile(
+    r'(?:/-/dcsupplemental|/(?:full|pdf|epdf|abstract|fulltext|html|suppl_file)'
+    r'|\.(?:epub|pmid|pmc|pubmed|accessed|available|doi|cited|retrieved))$', re.I)
+_DOI_COMPONENT = re.compile(r'\.(?:g|t|s|sd|sg|st|e)\d{3}$', re.I)   # PLOS figure/table/supplement components
+_DOI_PREPRINT_VERSION = re.compile(r'v\d+$', re.I)
+_DOI_SKIPPED_PREFIXES = ('10.13039',)   # Crossref Funder Registry entries are not citable works
+
+
+def clean_doi(value):
+    """Canonical lowercase DOI from text found in a document, or None when it is junk or a truncated stub.
+
+    Removes OpenURL/query tails, footnote digits after an unbalanced parenthesis, viewer suffixes
+    (/full, .Epub, .PMID), publisher component suffixes, and preprint version markers.
+    """
+    value = _DOI_URL_TAIL.sub('', value.strip())
+    while value.count(')') > value.count('(') and ')' in value:
+        value = value[:value.rfind(')')]
+    changed = True
+    while changed:
+        stripped = value.rstrip('.,;:')
+        stripped = _DOI_JUNK_TAIL.sub('', stripped)
+        stripped = _DOI_COMPONENT.sub('', stripped)
+        if stripped.lower().startswith('10.1101/'):
+            stripped = _DOI_PREPRINT_VERSION.sub('', stripped)
+        changed, value = stripped != value, stripped
+    prefix, _, suffix = value.partition('/')
+    if prefix.lower().startswith(_DOI_SKIPPED_PREFIXES):
+        return None
+    if len(suffix) < 4 or suffix[-1] in '-/(.' or (len(suffix) < 8 and not any(c.isdigit() for c in suffix)):
+        return None   # a stub left by a line break or a truncated extraction; never a resolvable work
+    return value.lower()
+
+
+def _join_split_doi(value, text, end):
+    """Rejoin a DOI whose extraction broke after a hyphen at a line or column boundary."""
+    if not value.endswith('-'):
+        return value
+    match = _DOI_CONTINUATION.match(text, end)
+    if not match:
+        return value
+    rest = match.group(1)
+    if len(rest.rstrip('.,;:')) < 3 or not any(c.isdigit() for c in rest):
+        return value   # prose or the next reference's number, not the rest of a DOI
+    # Letters on both sides mean the hyphen was inserted by hyphenation (j.cel-/rep); otherwise it belongs to the DOI.
+    if value[-2].isalpha() and rest[0].isalpha():
+        return value[:-1] + rest
+    return value + rest
+
+
 def _identifiers(text):
     # These are identifiers observed in source text, not verified bibliographic records.
     found = []
-    for value in re.findall(r'\b10\.\d{4,9}/[^\s<>\"\]\}]+', text, re.I):
-        value = value.rstrip('.,;:')
-        while value.endswith(')') and value.count(')') > value.count('('):
-            value = value[:-1]
-        found.append({'kind': 'doi', 'identifier': value.lower()})
+    for match in _DOI_START.finditer(text):
+        value, end = match.group(0), match.end()
+        value = _join_split_doi(value, text, end)
+        sici = _DOI_SICI.match(text, match.end())
+        if sici and not value.endswith('-'):
+            value += sici.group(0)
+        doi = clean_doi(value)
+        if doi:
+            found.append({'kind': 'doi', 'identifier': doi})
     for value in re.findall(r'\bPMID\s*[:#]?\s*(\d{5,9})\b', text, re.I):
         found.append({'kind': 'pmid', 'identifier': value})
     return [dict(kind=k, identifier=v) for k, v in sorted({(x['kind'], x['identifier']) for x in found})]

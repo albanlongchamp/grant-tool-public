@@ -20,7 +20,7 @@ import re
 import sqlite3
 import uuid
 
-from . import claim_review, references
+from . import claim_review, library, references
 
 MATCH_THRESHOLD = 0.6
 MAX_PAGE = 20
@@ -206,8 +206,13 @@ def observed_identifiers(archive_db, *, project=None):
                                WHERE (? = '' OR d.project = ?) AND (d.duplicate_of IS NULL OR d.duplicate_of = '')
                                ORDER BY i.kind, i.identifier, d.relative_path, u.ordinal''', (project or '', project or ''))
         for row in rows:
+            identifier = row['identifier']
+            if row['kind'] == 'doi':
+                identifier = library.clean_doi(identifier)   # archives indexed before the cleaner still carry PDF junk
+                if not identifier:
+                    continue
             try:
-                normalized = references.normalize_identifier(row['identifier'])
+                normalized = references.normalize_identifier(identifier)
             except references.ReferenceInputError:
                 continue
             key = normalized['kind'] + ':' + normalized['value']
