@@ -15,7 +15,7 @@ Researcher ↔ frontier-model assistant ↔ Grant Tool (stdio MCP) ↔ local res
 - Public reference identities, accessible full-text paragraphs, and version-specific claim judgments.
 - A bounded evidence-review queue showing unreviewed, disputed, or changed text for the assistant to inspect.
 - Editable Word or Markdown exports with a styled reference list, source notes, and unresolved inputs.
-- A per-proposal reference library: PubMed discovery, PMID/DOI resolution, CSL-JSON records, and RIS export.
+- A shared reference library harvested from the papers your previous applications cited, plus PubMed discovery, PMID/DOI resolution, CSL-JSON records, and RIS export.
 
 This is experimental research software. A retained source, an assistant judgment, or an empty review queue does not establish scientific validity, funding eligibility, or submission readiness.
 
@@ -57,7 +57,7 @@ PDF extraction needs Poppler's `pdftotext`; legacy Word and RTF extraction use m
 3. Find candidate papers on PubMed (with NIH iCite influence metrics), resolve the chosen ones by PMID or DOI, read exact paragraphs, and explicitly retain the passages used.
 4. Let the connected model draft, then save a new version with its evidence citations.
 5. Read the review queue, inspect consequential claims and their sources, and record assistant judgments.
-6. Record actual investigator changes, revise the selected parent, and export the chosen saved version in a reference style (Vancouver/NLM, Nature, Science, Cell, NEJM, JAMA, or APA) with a companion RIS file for EndNote or Zotero.
+6. Record actual investigator changes, revise the selected parent, and export the chosen saved version in a reference style (Vancouver/NLM, Nature, Science, Cell, NEJM, JAMA, APA, Lancet, or JCI) with a companion RIS file for EndNote or Zotero.
 
 The assistant can perform this loop through MCP. Citation checks validate identifiers; exact quotation checks validate location; the model and investigator evaluate scientific support. Previous support judgments never silently transfer to a revised draft.
 

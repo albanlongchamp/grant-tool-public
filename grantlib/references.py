@@ -455,6 +455,62 @@ def _pubmed(body, result):
         result['limitations'].append('No abstract was supplied by PubMed for this record.')
 
 
+def lookup_bibliographic(text, *, transport=None, rows=3):
+    """Crossref free-text lookup of one reference-list entry; returns ranked candidates, not a verdict.
+
+    Send only text that is itself a bibliographic citation. Candidates carry the
+    DOI, title, first author family name, year and Crossref score; the caller
+    decides whether any candidate matches and then resolves that DOI explicitly.
+    """
+    if not isinstance(text, str) or not 20 <= len(text.strip()) <= 600 or '\n' in text:
+        raise ReferenceInputError('Supply one reference-list entry of 20 to 600 characters on a single line.')
+    if type(rows) is not int or not 1 <= rows <= 5:
+        raise ReferenceInputError('rows must be an integer from 1 to 5.')
+    url = 'https://api.crossref.org/works?' + urlencode({
+        'query.bibliographic': ' '.join(text.split()), 'rows': rows,
+        'select': 'DOI,title,author,container-title,issued,score'})
+    try:
+        response = (transport or _network)(url, timeout=TIMEOUT, max_bytes=MAX_BYTES)
+    except (OSError, TimeoutError):
+        raise ReferenceNetworkError('The public reference service could not be reached within the request limit.') from None
+    if (not isinstance(response, Response) or type(response.status) is not int
+            or not isinstance(response.headers, dict) or not isinstance(response.body, bytes)):
+        raise ReferenceProtocolError('The reference transport returned an invalid response.')
+    if len(response.body) > MAX_BYTES:
+        raise ReferenceProtocolError('Reference response exceeds the size limit.')
+    if response.status == 429:
+        raise ReferenceRateLimited(_retry_after({str(k).lower(): str(v) for k, v in response.headers.items()}))
+    if response.status != 200:
+        raise ReferenceNetworkError(f'The public reference service returned HTTP {response.status}.')
+    try:
+        data = json.loads(response.body)
+        items = data['message']['items']
+        if not isinstance(items, list):
+            raise TypeError
+    except (ValueError, KeyError, TypeError, UnicodeError):
+        raise ReferenceProtocolError('Crossref returned an invalid bibliographic search result.') from None
+    candidates = []
+    for work in items[:rows]:
+        if not isinstance(work, dict):
+            continue
+        doi = _known_id(work.get('DOI'), 'doi')
+        if not doi:
+            continue
+        titles = work.get('title') if isinstance(work.get('title'), list) else []
+        authors = work.get('author') if isinstance(work.get('author'), list) else []
+        first = next((a for a in authors if isinstance(a, dict)), {})
+        year = None
+        parts = (work.get('issued') or {}).get('date-parts') if isinstance(work.get('issued'), dict) else None
+        if isinstance(parts, list) and parts and isinstance(parts[0], list) and parts[0] and type(parts[0][0]) is int:
+            year = parts[0][0]
+        containers = work.get('container-title') if isinstance(work.get('container-title'), list) else []
+        candidates.append({'doi': doi, 'title': _plain(titles[0]) if titles else None,
+                           'first_author_family': _plain(first.get('family')) or _plain(first.get('name')),
+                           'journal': _plain(containers[0]) if containers else None, 'year': year,
+                           'score': work.get('score') if isinstance(work.get('score'), (int, float)) else None})
+    return candidates
+
+
 def resolve(identifier, *, transport=None):
     """Resolve one PMID/DOI; return a JSON-safe metadata snapshot.
 

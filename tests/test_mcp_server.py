@@ -461,6 +461,44 @@ class MCPServerTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn('Style: Vancouver', Path(plain['local_path']).read_text())
             await self.error(client, 'grants_export', proposal_id=proposal['id'], artifact_id=saved['artifact_id'], style='chicago')
 
+    async def test_shared_library_is_harvested_from_the_archive_and_adopted_by_proposals(self):
+        from tests.test_reference_library import FakeNetwork
+        self.source.write_text(SOURCE_TEXT + '\n\nREFERENCES\n\n1. Author E. A fictional paired study. Invent J. 2024;12:100-110. doi:10.9999/fictional\n')
+        library.ingest(self.config_value)
+        harness = self.harness()
+        async with Client(create_server(self.config, harness=harness)) as client:
+            tools = {tool.name: tool for tool in (await client.list_tools()).tools}
+            self.assertTrue(tools['grants_harvest_archive_references'].annotations.open_world_hint)
+            self.assertFalse(tools['grants_harvest_archive_references'].annotations.read_only_hint)
+            self.assertTrue(tools['grants_search_library'].annotations.read_only_hint)
+            self.assertIn('lancet', tools['grants_export'].input_schema['properties']['style']['enum'])
+            status = await self.call(client, 'grants_status')
+            self.assertEqual(status['reference_library_count'], 0)
+            network = FakeNetwork()
+            with patch('grantlib.references._network', network):
+                preview = await self.call(client, 'grants_harvest_archive_references', dry_run=True)
+                self.assertEqual((preview['pending_identifiers'], network.calls), (1, []))
+                harvested = await self.call(client, 'grants_harvest_archive_references', limit=5)
+            self.assertEqual([a['identity_key'] for a in harvested['added']], ['doi:10.9999/fictional'])
+            self.assertEqual(harvested['remaining'], 0)
+            found = await self.call(client, 'grants_search_library', query='paired')
+            entry = found['items'][0]
+            self.assertEqual(entry['cited_in']['projects'], ['InventedProject'])
+            self.assertEqual(entry['identity_basis'], 'explicit_identifier')
+            proposal, source = await self.prepared(client)
+            adopted = await self.call(client, 'grants_add_library_reference', proposal_id=proposal['id'],
+                                      expected_revision=proposal['revision'], library_reference_id=entry['id'])
+            self.assertTrue(adopted['reference_id'].startswith('R_'))
+            self.assertFalse(adopted['already_present'])
+            self.assertIn(adopted['reference_id'], adopted['reading_hint'])
+            await self.error(client, 'grants_add_library_reference', proposal_id=proposal['id'],
+                             expected_revision=proposal['revision'], library_reference_id=entry['id'])
+            formatted = await self.call(client, 'grants_format_references', proposal_id='', scope='library', style='lancet')
+            self.assertEqual(formatted['count'], 1)
+            self.assertEqual(formatted['entries'][0]['entry'], 'Author E, Fictional Consortium. Fictional paired study. *Invented Journal* 2025; 12: 100–110.')
+            self.assertEqual((await self.call(client, 'grants_status'))['reference_library_count'], 1)
+            await self.error(client, 'grants_harvest_archive_references', limit=0)
+
     async def test_actual_stdio_auto_protocol_uses_only_synthetic_archive_and_survives_tool_errors(self):
         await self.stdio_case('auto')
 

@@ -18,7 +18,7 @@ import time
 import uuid
 from urllib.parse import urlsplit
 
-from . import claim_review, draft_metrics, length_targets, memory, publication_store
+from . import claim_review, draft_metrics, length_targets, memory, publication_store, reference_library
 
 
 ACTIONS = {'evidence', 'design', 'aims', 'strategy', 'review', 'revise'}
@@ -139,6 +139,7 @@ class Store:
             claim_review.initialize(c)
             publication_store.initialize(c)
             memory.initialize(c)
+            reference_library.initialize(c)
 
     @contextmanager
     def connect(self, write=False):
@@ -1048,7 +1049,12 @@ class Service:
             self.store._editable(c, proposal_id, expected_revision)
         from .references import resolve
         snapshot = resolve(identifier)
-        return self.store.add_reference(proposal_id, expected_revision, snapshot)
+        proposal = self.store.add_reference(proposal_id, expected_revision, snapshot)
+        # The shared workspace library remembers every resolved paper and which proposal used it.
+        record = next((r for r in proposal['references'] if reference_library._keys(r) & reference_library._keys(snapshot)), None)
+        if record is not None and reference_library.identity_key(snapshot):
+            reference_library.remember(self.store, snapshot, proposal_link={'proposal_id': proposal_id, 'reference_record_id': record['id']})
+        return proposal
 
     def fetch_full_text(self, proposal_id, expected_revision, pmcid):
         # Only the explicitly supplied public identifier goes to retrieval. The

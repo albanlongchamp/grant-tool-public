@@ -15,7 +15,7 @@ import sqlite3
 from typing import Any, Literal
 import uuid
 
-from . import bibliography, guidance, library, nih, refresh
+from . import bibliography, guidance, library, nih, reference_library, refresh
 from .harness import GrantHarness
 from .onboarding import OnboardingTools, open_workspace
 from .references import ReferenceError
@@ -83,6 +83,7 @@ class GrantTools(OnboardingTools):
                 'archive_counts': report.get('counts', {}), 'archive_built_at': report.get('built_at'),
                 'public_projects_available': (self.harness.db.parent / 'nih.sqlite3').is_file(),
                 'proposal_count': len(self.harness.list()),
+                'reference_library_count': reference_library.count(self.harness.store),
                 'freshness': refresh.status(self.harness.db.parent),
                 'generation_enabled': False,
                 'model_execution': 'The connected frontier model performs all reasoning and writing; this server never invokes a model.',
@@ -180,13 +181,20 @@ class GrantTools(OnboardingTools):
             candidate['abstract_truncated'] = len(full) > abstract_chars
         return result
 
-    def grants_format_references(self, proposal_id: str, style: Literal['vancouver', 'nature', 'science', 'cell', 'nejm', 'jama', 'apa'] = 'vancouver',
+    def grants_format_references(self, proposal_id: str, style: Literal['vancouver', 'nature', 'science', 'cell', 'nejm', 'jama', 'apa', 'lancet', 'jci'] = 'vancouver',
                                  reference_ids: list[str] | None = None,
-                                 format: Literal['markdown', 'ris', 'csl'] = 'markdown') -> dict[str, Any]:
-        """Render the proposal's retained reference library (or selected R_ IDs) in a citation style, or as RIS / CSL-JSON text for EndNote, Zotero or Mendeley. Formatting is deterministic text from retained metadata; it is not verification. Drafts still cite by [[R_...]] ID; the export applies the style."""
+                                 format: Literal['markdown', 'ris', 'csl'] = 'markdown',
+                                 scope: Literal['proposal', 'library'] = 'proposal') -> dict[str, Any]:
+        """Render the proposal's retained references (or, with scope='library', the shared workspace library; proposal_id may then be empty) in a citation style, or as RIS / CSL-JSON text for EndNote, Zotero or Mendeley. reference_ids selects R_ or L_ IDs. Formatting is deterministic text from retained metadata; it is not verification. Drafts still cite by [[R_...]] ID; the export applies the style."""
         bibliography.check_style(style)
-        proposal = self.harness.get(proposal_id)
-        references = proposal['references']
+        if scope == 'library':
+            with self.harness.store.connect() as c:
+                rows = c.execute('SELECT id, snapshot FROM library_references ORDER BY created_at').fetchall()
+            references = [{**json.loads(row['snapshot']), 'id': row['id']} for row in rows]
+            proposal = {'revision': None}
+        else:
+            proposal = self.harness.get(proposal_id)
+            references = proposal['references']
         if reference_ids is not None:
             if not isinstance(reference_ids, list) or not 1 <= len(reference_ids) <= 200:
                 raise ValueError('Select 1 to 200 retained reference IDs, or omit reference_ids for the whole library.')
@@ -196,7 +204,7 @@ class GrantTools(OnboardingTools):
                 raise ValueError('Unknown reference IDs for this proposal: ' + ', '.join(missing[:10]))
             references = [known[i] for i in dict.fromkeys(reference_ids)]
         items = [bibliography.csl_item(r, r['id']) for r in references]
-        result = {'proposal_id': proposal_id, 'revision': proposal['revision'], 'style': style, 'format': format,
+        result = {'proposal_id': proposal_id, 'revision': proposal['revision'], 'style': style, 'format': format, 'scope': scope,
                   'count': len(items), 'available_styles': bibliography.describe_styles()}
         if format == 'ris':
             result['text'] = bibliography.ris(items)
@@ -206,6 +214,32 @@ class GrantTools(OnboardingTools):
             result['entries'] = [{'id': item['id'], 'entry': bibliography.format_entry(item, style),
                                   'in_text': bibliography.in_text_preview(item, style)} for item in items]
         return result
+
+    def grants_harvest_archive_references(self, project: str = '', limit: int = 10, include_unidentified: bool = False,
+                                          retry_failed: bool = False, dry_run: bool = False) -> dict[str, Any]:
+        """Build the shared reference library from the indexed grant archive. Each call resolves up to `limit` DOIs/PMIDs that previous applications cited (PubMed/Crossref metadata only) and records which archived documents cited each paper; call again until `remaining` is 0. `include_unidentified=True` also sends reference-list entries that lack an identifier to Crossref's bibliographic search and keeps only confident matches, labelled as fuzzy. `dry_run=True` previews pending items without any network request. Library entries are identity metadata, not verified support; add one to a proposal with grants_add_library_reference before citing it."""
+        _text(project, 'project', 300); _integer(limit, 'limit', 1, reference_library.MAX_PAGE)
+        if not self.harness.db.is_file():
+            raise ValueError('The archive index is unavailable; ingest the configured archive first.')
+        return reference_library.harvest(self.harness.store, self.harness.db, project=project or None, limit=limit,
+                                         include_unidentified=include_unidentified, retry_failed=retry_failed, dry_run=dry_run)
+
+    def grants_search_library(self, query: str = '', project: str = '', offset: int = 0, limit: int = 10,
+                              include_abstract: bool = False) -> dict[str, Any]:
+        """Search the shared reference library built from previous grants and earlier proposal lookups. Entries rank by query hits, then by how many archived documents cite them, and show where each paper was cited, its identity basis (explicit identifier or fuzzy Crossref match) and known notices. Discovery only: adopt an entry with grants_add_library_reference, then read it before citing."""
+        _text(query, 'query', 500); _text(project, 'project', 300)
+        _integer(offset, 'offset'); _integer(limit, 'limit', 1, 20)
+        return reference_library.search(self.harness.store, query, project=project or None, offset=offset, limit=limit,
+                                        include_abstract=include_abstract)
+
+    def grants_add_library_reference(self, proposal_id: str, expected_revision: int, library_reference_id: str) -> dict[str, Any]:
+        """Copy one shared-library record into this proposal's references without a network request, returning the citable R_ reference ID (an existing matching record is reused). Requires the inspected proposal revision. Read the retained abstract before relying on it; adoption is not claim support."""
+        _text(library_reference_id, 'library_reference_id', 100)
+        result = reference_library.add_to_proposal(self.harness.store, proposal_id, expected_revision, library_reference_id)
+        reference = next(r for r in result['proposal']['references'] if r['id'] == result['reference_id'])
+        return {'proposal_id': proposal_id, 'revision': result['proposal']['revision'], 'reference_id': result['reference_id'],
+                'already_present': result['already_present'], 'reference': _excerpt(reference, 'abstract', max_chars=4000),
+                'reading_hint': 'Cite as [[' + result['reference_id'] + ']] after reading the abstract with grants_read_reference.'}
 
     def grants_verify_official_source(self, url: str, max_chars: int = 12000) -> dict[str, Any]:
         """Fetch an official public source live before using a deadline/submission requirement. Saves an immutable source snapshot. Read and interpret the applicable opportunity and linked instructions; retrieval alone does not verify compliance. Never put private proposal text in the URL."""
@@ -455,7 +489,7 @@ class GrantTools(OnboardingTools):
 
     def grants_export(self, proposal_id: str, artifact_id: str,
                        format: Literal['md', 'docx', 'ris', 'csl'] = 'docx',
-                       style: Literal['vancouver', 'nature', 'science', 'cell', 'nejm', 'jama', 'apa'] = 'vancouver') -> dict[str, Any]:
+                       style: Literal['vancouver', 'nature', 'science', 'cell', 'nejm', 'jama', 'apa', 'lancet', 'jci'] = 'vancouver') -> dict[str, Any]:
         """Export an explicit saved version to private server-controlled storage. md/docx apply the reference style (numbered or author-year in-text form plus a formatted References section before the review appendices) and also write a companion .ris file of the cited publications for EndNote/Zotero import. ris/csl export only the cited publications. Returns local file paths and hashes; no arbitrary destination, browser or network upload."""
         bibliography.check_style(style)
         directory = self.harness.db.parent / 'mcp-exports'
@@ -489,7 +523,7 @@ class GrantTools(OnboardingTools):
 
 
 READ_ONLY = {'grants_status', 'grants_search_archive', 'grants_read_archive_passage',
-             'grants_search_publications', 'grants_find_references', 'grants_format_references',
+             'grants_search_publications', 'grants_find_references', 'grants_format_references', 'grants_search_library',
              'grants_read_official_snapshot',
              'grants_search_funded_projects', 'grants_search_guidance', 'grants_list_proposals',
              'grants_get_proposal', 'grants_get_evidence', 'grants_get_artifact',
@@ -562,7 +596,7 @@ def create_server(config_path=None, *, harness=None):
             read_only_hint=name in READ_ONLY, destructive_hint=False,
             idempotent_hint=name in READ_ONLY or name in {'grants_get_job', 'grants_cancel_job'},
             open_world_hint=name in {'grants_resolve_reference', 'grants_fetch_full_text', 'grants_verify_official_source',
-                                     'grants_find_references'}))(guarded(getattr(api, name)))
+                                     'grants_find_references', 'grants_harvest_archive_references'}))(guarded(getattr(api, name)))
     return server
 
 

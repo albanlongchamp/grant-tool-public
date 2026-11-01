@@ -49,6 +49,7 @@ Read local funding-call text through `grants_read_rfp`, continuing with `text_wi
 | `grants_search_archive`, `grants_read_archive_passage` | Discover and read indexed original passages with ownership and locators |
 | `grants_search_funded_projects`, `grants_search_guidance`, `grants_search_publications` | Search stored public discovery collections and inspect freshness |
 | `grants_find_references`, `grants_format_references` | Find candidate papers live on PubMed with NIH iCite influence metrics; render the retained library in a citation style or as RIS / CSL-JSON |
+| `grants_harvest_archive_references`, `grants_search_library`, `grants_add_library_reference` | Build a shared library from the papers your previous applications cited, search it with cited-in provenance, and adopt an entry into a proposal without a new lookup |
 | `grants_verify_official_source`, `grants_read_official_snapshot` | Fetch and read an immutable official-page snapshot |
 | `grants_list_proposals`, `grants_get_proposal`, `grants_create_proposal`, `grants_update_brief` | Reuse proposals and maintain explicit briefs |
 | `grants_gather_evidence`, `grants_get_evidence` | Build and read retained evidence packets |
@@ -105,9 +106,17 @@ Gather a new evidence packet after changing selected memory. Historical draft sn
 
 `grants_export` saves one explicit artifact as `md`, `docx`, `ris`, or `csl` under private server-controlled `mcp-exports/` storage. It returns a local path, byte size, and hash. It does not upload a file or create a public URL. Word output is an editing document with source notes, not a sponsor-formatting certificate.
 
+### Shared reference library from previous grants
+
+The archive index already records every DOI and `PMID:` string in indexed paragraphs and labels reference-list sections. `grants_harvest_archive_references` resolves those identifiers through PubMed or Crossref in bounded batches (`limit`, at most 20 per call; call again until `remaining` is 0) and stores each paper once in a workspace library with the archived documents, projects, and locators that cited it. `dry_run=True` previews pending items without any network request; `project` restricts the scan to one archive subfolder. Failed lookups are remembered and skipped until `retry_failed=True`.
+
+`include_unidentified=True` also sends reference-list entries that carry no identifier to Crossref's bibliographic search. Only the entry text itself leaves the machine, never surrounding prose. A candidate is kept only when its title words, first author, and year agree with the entry; the record is then labelled `crossref_bibliographic_match` with its confidence and a caution to confirm against the original list.
+
+`grants_search_library` ranks entries by query hits, then by how many archived documents cite them, and shows `cited_in`, `used_by_proposals`, identity basis, and notices. `grants_add_library_reference` copies a library record into a proposal's references without a network request and returns the citable `R_` ID. Every `grants_resolve_reference` call also feeds the library, so it grows with your work. `grants_format_references(scope="library")` renders or exports the whole library.
+
 ### Reference styles
 
-Drafts cite by stable source ID (`[[R_...]]`, `[[F_...]]`, `[[P_...]]`); the `style` argument decides how those markers and the reference list appear in the export. Available styles: `vancouver` (NLM/ICMJE, the default and the usual NIH choice), `nature`, `science`, `cell`, `nejm`, `jama`, and `apa`. Numbered styles keep first-appearance numbering; `nature` and `jama` render superscript numerals in Word; `cell` and `apa` substitute author-year labels, merge adjacent citations, add `2024a`/`2024b` suffixes when needed, and sort the list alphabetically. A formatted **References** section follows the draft body, before the review appendices. Local archive passages, memory, and decisions stay numbered and point to the source notes. Formatting is deterministic text from retained metadata; it does not verify a reference.
+Drafts cite by stable source ID (`[[R_...]]`, `[[F_...]]`, `[[P_...]]`); the `style` argument decides how those markers and the reference list appear in the export. Available styles: `vancouver` (NLM/ICMJE, the default and the usual NIH choice), `nature`, `science`, `cell`, `nejm`, `jama`, `apa`, `lancet`, and `jci`. Numbered styles keep first-appearance numbering; `nature` and `jama` render superscript numerals in Word; `cell` and `apa` substitute author-year labels, merge adjacent citations, add `2024a`/`2024b` suffixes when needed, and sort the list alphabetically. A formatted **References** section follows the draft body, before the review appendices. Local archive passages, memory, and decisions stay numbered and point to the source notes. Formatting is deterministic text from retained metadata; it does not verify a reference.
 
 Every `md` or `docx` export also writes a companion `.ris` file of the cited publications for EndNote, Zotero, or Mendeley import (`companion_ris`). `format="ris"` or `format="csl"` exports only those records. `grants_format_references` renders the whole retained library (or selected `R_` IDs) in a style, or as RIS / CSL-JSON text, without exporting a draft.
 

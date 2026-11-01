@@ -35,6 +35,10 @@ STYLES = {
              'max_authors': 6, 'keep_authors': 3},
     'apa': {'label': 'APA 7th edition', 'citation': 'author-year', 'order': 'alphabetical',
             'max_authors': 20, 'keep_authors': 19},
+    'lancet': {'label': 'The Lancet', 'citation': 'numeric', 'order': 'appearance',
+               'max_authors': 6, 'keep_authors': 3},
+    'jci': {'label': 'Journal of Clinical Investigation', 'citation': 'numeric', 'order': 'appearance',
+            'max_authors': 6, 'keep_authors': 1},
 }
 DEFAULT_STYLE = 'vancouver'
 
@@ -235,10 +239,16 @@ def format_entry(item, style):
     names, year = item.get('author', []), _year(item)
     year_text = str(year) if year else 'n.d.'
     vol, issue, pages = item.get('volume'), item.get('issue'), item.get('page')
-    if style in ('vancouver', 'nejm', 'jama'):
+    if style in ('vancouver', 'nejm', 'jama', 'lancet', 'jci'):
         authors = _join([_name_nlm(n) for n in names], last_sep=', ', et_al=', et al',
                         max_authors=spec['max_authors'], keep_authors=spec['keep_authors'])
         journal = _journal(item, abbreviated=True)
+        if style == 'lancet':
+            where = f'{year_text}' + (f'; {vol}' if vol else '') + (f' ({issue})' if issue and not vol else '') + (f': {_dash(pages)}' if pages else '')
+            return f'{authors}. {_title(item)}. *{journal}* {where}.'
+        if style == 'jci':
+            where = f'{year_text}' + (f';{vol}' if vol else '') + (f'({issue})' if issue else '') + (f':{_dash(pages)}' if pages else '')
+            return f'{authors}. {_title(item)}. *{journal}*. {where}.'
         if style == 'vancouver':
             where = f'{year_text}' + (f';{vol}' if vol else '') + (f'({issue})' if issue else '') + (f':{pages}' if pages else '')
             parts = [authors, _title(item), journal, where]

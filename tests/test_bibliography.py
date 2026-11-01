@@ -51,7 +51,8 @@ class CslTests(unittest.TestCase):
             'cell': 'Author, E., Writer, S.J.-P., and Person, T. (2024). A fictional paired study of nothing. *Invent J Test* *12*, 100–110. https://doi.org/10.9999/fictional.',
             'nejm': 'Author E, Writer SJP, Person T. A fictional paired study of nothing. Invent J Test 2024;12:100-110.',
             'jama': 'Author E, Writer SJP, Person T. A fictional paired study of nothing. *Invent J Test*. 2024;12(3):100-110. doi:10.9999/fictional',
-            'apa': 'Author, E., Writer, S. J.-P., & Person, T. (2024). A fictional paired study of nothing. *Invented Journal of Testing*, *12*(3), 100–110. https://doi.org/10.9999/fictional',
+            'apa': 'Author, E., Writer, S. J.-P., & Person, T. (2024). A fictional paired study of nothing. *Invented Journal of Testing*, *12*(3), 100–110. https://doi.org/10.9999/fictional',            'lancet': 'Author E, Writer SJP, Person T. A fictional paired study of nothing. *Invent J Test* 2024; 12: 100–110.',
+            'jci': 'Author E, Writer SJP, Person T. A fictional paired study of nothing. *Invent J Test*. 2024;12(3):100–110.',
         }
         self.assertEqual(set(expected), set(bib.style_names()))
         for style, text in expected.items():
@@ -63,6 +64,8 @@ class CslTests(unittest.TestCase):
         item = bib.csl_item(metadata(author_parts=many), 'R_1')
         self.assertTrue(bib.format_entry(item, 'vancouver').startswith('Family1 G, Family2 G, Family3 G, Family4 G, Family5 G, Family6 G, et al. '))
         self.assertTrue(bib.format_entry(item, 'nejm').startswith('Family1 G, Family2 G, Family3 G, et al. '))
+        self.assertTrue(bib.format_entry(item, 'lancet').startswith('Family1 G, Family2 G, Family3 G, et al. '))
+        self.assertTrue(bib.format_entry(item, 'jci').startswith('Family1 G, et al. A fictional'))
         self.assertTrue(bib.format_entry(item, 'nature').startswith('Family1, G. et al. A fictional'))
         self.assertTrue(bib.format_entry(item, 'science').startswith('G. Family1 et al., A fictional'))
         self.assertIn('Family8, G. (2024)', bib.format_entry(item, 'cell'))
